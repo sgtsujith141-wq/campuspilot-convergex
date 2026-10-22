@@ -3,8 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // node:sqlite is a Node builtin; keep server code on the Node.js runtime.
-  serverExternalPackages: [],
+  // A stray package-lock.json exists in a parent folder; pin the workspace root explicitly.
+  outputFileTracingRoot: process.cwd(),
+  turbopack: { root: process.cwd() },
   async headers() {
     return [
       {
