@@ -1,0 +1,53 @@
+{
+  "scenarioVersion": "2026-10-22-1",
+  "synthetic": true,
+  "dataAsOf": "2026-10-22T21:00:00+05:30",
+  "timezone": "Asia/Kolkata",
+  "student": {
+    "id": "stu_maya_demo",
+    "name": "Maya Rao",
+    "fictional": true,
+    "campus": "Sample campus environment",
+    "interests": ["cybersecurity", "AI agents", "hackathons"],
+    "goals": ["Join a cybersecurity hackathon without breaking academic constraints"]
+  },
+  "policy": {
+    "id": "policy_attendance_demo_v1",
+    "isOfficial": false,
+    "minimumAttendancePercent": 75,
+    "appliesTo": "illustrative example only",
+    "notes": "Do not infer VIT-specific eligibility or on-duty approval from this demonstration policy."
+  },
+  "courses": [
+    {"id":"course_ns","code":"CS201","name":"Network Security","attended":21,"total":27,"futureScheduled":4,"missesByOption":{"full":2,"partial":1,"defer":0}},
+    {"id":"course_db","code":"CS203","name":"Database Systems","attended":25,"total":32,"futureScheduled":3,"missesByOption":{"full":1,"partial":0,"defer":0}},
+    {"id":"course_dm","code":"MA202","name":"Discrete Mathematics","attended":29,"total":36,"futureScheduled":2,"missesByOption":{"full":0,"partial":0,"defer":0}}
+  ],
+  "opportunity": {
+    "id":"opp_cyberforge","name":"CyberForge Sprint","fictional":true,
+    "start":"2026-10-29T10:00:00+05:30","end":"2026-10-30T17:00:00+05:30",
+    "registrationDeadline":"2026-10-27T23:59:00+05:30",
+    "eligibility":"Unknown until officially verified",
+    "approval":"Advance institutional on-duty approval may be needed; no automatic assumption"
+  },
+  "commitments": [
+    {"id":"assignment_db","type":"assignment","courseId":"course_db","name":"Database mini-project","dueAt":"2026-10-29T18:00:00+05:30","modifiedDemoDueAt":"2026-10-28T19:00:00+05:30","source":"academic_simulator"},
+    {"id":"assessment_ns","type":"assessment","courseId":"course_ns","name":"Network Security internal assessment","startsAt":"2026-10-31T09:00:00+05:30","studyHoursDesired":3,"source":"academic_simulator"}
+  ],
+  "options": [
+    {"id":"full","label":"Attend full event","eligibility":"requires review"},
+    {"id":"partial","label":"Attend selected sessions","eligibility":"pending policy and event confirmation"},
+    {"id":"defer","label":"Defer participation","eligibility":"academic-only baseline"}
+  ],
+  "expectedProjections": {
+    "full":{"course_ns":74.1935483871,"course_db":77.1428571429,"course_dm":81.5789473684},
+    "partial":{"course_ns":77.4193548387,"course_db":80.0,"course_dm":81.5789473684},
+    "defer":{"course_ns":80.6451612903,"course_db":80.0,"course_dm":81.5789473684}
+  },
+  "securityExample": {
+    "actor":"stu_maya_demo",
+    "targetStudent":"stu_other_demo",
+    "resource":"attendance",
+    "expectedServerResponse":403
+  }
+}

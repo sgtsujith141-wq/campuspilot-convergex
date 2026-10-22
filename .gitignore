@@ -1,0 +1,35 @@
+# dependencies / build
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# local runtime data (SQLite demo database is regenerated from the seed)
+.data/
+*.db
+*.db-shm
+*.db-wal
+
+# secrets — never commit real keys
+.env
+.env.*
+!.env.example
+
+# test output
+test-results/
+playwright-report/
+blob-report/
+coverage/
+
+# OS
+.DS_Store
+
+# Original kit download artifacts at repo root. They are byte-identical copies of
+# files already tracked under CampusPilot_Build_Kit/ (verified with cmp), plus the zip.
+/CampusPilot_Full_Build_Kit.zip
+/CampusPilot_Interactive_Preview.html
+/06_CLAUDE_MASTER_BUILD_PROMPT.md
+/overview.png
+/planner.png
+/replanned.png
