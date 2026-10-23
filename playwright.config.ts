@@ -7,6 +7,8 @@ const PORT = 3100;
 
 export default defineConfig({
   testDir: "./e2e",
+  testMatch: "*.spec.ts",
+  snapshotPathTemplate: "{testDir}/{testFileName}-snapshots/{arg}{ext}",
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,
