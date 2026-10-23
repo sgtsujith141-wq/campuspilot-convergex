@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Bell, ChevronsUpDown, House, ListTree, LogOut, Maximize2, Minimize2, Scale, ShieldCheck } from "lucide-react";
+import { Bell, ChevronsUpDown, House, ListTree, LogOut, Maximize2, Minimize2, Play, Scale, ShieldCheck } from "lucide-react";
 import { formatIstStamp, formatIstWeekday } from "@/lib/core/time";
 import { courseInitials } from "@/lib/present";
 import { Brand, BrandMark } from "./ui";
@@ -55,6 +55,9 @@ function ProfileMenu() {
             <strong>Sample login session</strong>
             Issued by the server for this fictional profile only.{ws.session.expiresAt ? ` Expires ${formatIstStamp(ws.session.expiresAt)} IST.` : ""}
           </div>
+          <a className="menu-item" role="menuitem" href="/overview?intro=1">
+            <Play size={15} aria-hidden="true" /> Play presentation intro
+          </a>
           <button className="menu-item" role="menuitem" onClick={logout}>
             <LogOut size={15} aria-hidden="true" /> Sign out
           </button>

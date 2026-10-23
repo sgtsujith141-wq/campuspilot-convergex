@@ -13,9 +13,9 @@ export function cx(...parts: (string | false | null | undefined)[]) {
 export function BrandMark({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden="true">
-      <rect width="22" height="22" rx="6" fill="#3446b8" />
+      <rect width="22" height="22" rx="6" fill="#142d35" />
       <path d="M5.5 15.5 9.5 11.5 12 14 16 8" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="16.25" cy="7.75" r="1.75" fill="#fff" />
+      <circle cx="16.25" cy="7.75" r="1.75" fill="#4fb3ab" />
     </svg>
   );
 }
