@@ -141,7 +141,7 @@ function OptionCard({ option, mission, selected, onSelect }: { option: DecisionO
           </>
         ) : option.participates ? (
           <>
-            <CircleCheck size={13} /> Meets sample threshold · approval pending
+            <CircleCheck size={13} /> Meets sample threshold · OD approval unverified
           </>
         ) : (
           <>
