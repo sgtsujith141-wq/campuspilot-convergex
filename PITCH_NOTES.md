@@ -18,7 +18,7 @@ language model.*
 | Time | Click | Say |
 |---|---|---|
 | 0:00 | **Home** | "Students juggle attendance in one portal, deadlines in another and opportunities everywhere else. CampusPilot turns that into one decision with evidence. Everything here is a fictional student on synthetic data." Point at **Needs attention** — it is derived from the records. |
-| 0:10 | **Evaluate options** → **Evaluate options** | "This is a guided mission — event participation. Specialists read Maya's records through scoped tools; a deterministic engine does every calculation. No language model is involved." |
+| 0:10 | **Start evaluation** → **Evaluate options** | "This is a guided mission — event participation. Specialists read Maya's records through scoped tools; a deterministic engine does every calculation. No language model is involved." |
 | 0:25 | Click **Attend full event**, then **Attend selected sessions** in the table | "Full attendance projects Network Security at **74.2%**, below the sample 75% rule. Selected sessions gives **77.4%**, deferring **80.6%**. The formula is right here." Point at the recommendation: "It's *conditional* — eligibility, on-duty approval and the real regulation are still unverified." |
 | 0:40 | **Approve plan** | Point at the rail: "Maya approved *her plan* — that's all. On-duty permission and eligibility stay 'not verified'. The server saved three local tasks and we read them back." |
 | 0:55 | Rail → **Move deadline to Oct 28, 7:00 PM** | "Now the assignment deadline changes in the academic source. Maya doesn't type anything." Pause on the three steps: "Deadline Oct 29 → Oct 28. CampusPilot moved the work block from Oct 28 to Oct 27. Her earlier approval no longer applies." |

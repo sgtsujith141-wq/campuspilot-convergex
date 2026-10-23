@@ -84,7 +84,7 @@ const STATE_BADGE = {
 } as const;
 
 const STATE_CTA = {
-  none: { label: "Evaluate options", note: "Reads your synthetic academic records and compares three choices. Nothing is submitted anywhere." },
+  none: { label: "Start evaluation", note: "Reads your synthetic academic records and compares three choices. Nothing is submitted anywhere." },
   awaiting: { label: "Review recommendation", note: "Three options are ready to compare. Nothing happens until you approve a plan." },
   approved: { label: "Open your plan", note: "Approved in CampusPilot only — on-duty permission and event eligibility are still unverified." },
   needs_review: { label: "Review what changed", note: "A source record changed after you approved. Your earlier approval no longer applies." },
