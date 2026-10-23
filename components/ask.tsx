@@ -7,7 +7,12 @@ import type { AiStatusView, AskView } from "@/lib/views";
 import { Alert, Badge, Spinner } from "./ui";
 import { useWorkspace } from "./workspace";
 
-const SUGGESTIONS = ["What is my biggest attendance risk?", "Which deadline conflicts with the hackathon?", "What must I verify before I can participate?"];
+const SUGGESTIONS = [
+  "Which classes clash with the hackathon, and what should I do?",
+  "Which deadline conflicts with the hackathon?",
+  "What is my biggest attendance risk?",
+  "What must I verify before I can participate?",
+];
 const MAX = 300;
 
 function statusBadge(s: AiStatusView | null) {
@@ -128,82 +133,169 @@ export function AskPanel() {
   );
 }
 
+const TOOL_LABEL: Record<string, string> = {
+  get_my_attendance: "Attendance records",
+  get_my_courses: "Course list",
+  get_applicable_policy: "Attendance policy (sample)",
+  get_my_commitments: "Deadlines and assessments",
+  get_my_timetable: "Class timetable",
+  get_event: "Event listing",
+  verify_event_rules: "Event rules",
+};
+
+/** Scroll to a Decisions section, evaluating the guided mission first if it does not exist yet. */
+function useGoTo() {
+  const { ws, evaluate } = useWorkspace();
+  return async (target: "timetable" | "compare" | "plan") => {
+    const id = target === "timetable" ? "timetable" : target === "compare" ? "compare" : "action-plan";
+    if (target !== "timetable" && !ws.mission) {
+      const ok = await evaluate(ws.opportunity.id);
+      if (!ok) return;
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    const el = document.getElementById(id);
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    el.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  };
+}
+
+const ACTION_LABEL = { timetable: "View timetable", compare: "Compare my options", plan: "Review action plan" } as const;
+
 function AnswerView({ a }: { a: AskView }) {
+  const { busy } = useWorkspace();
+  const go = useGoTo();
   const routedBy =
     a.routing.source === "model"
-      ? `${a.model} · ${seconds(a.routing.modelMs)}${a.routing.attempts > 1 ? ` · ${a.routing.attempts} attempts` : ""}`
+      ? `${a.model} chose this investigation in ${seconds(a.routing.modelMs)}${a.routing.attempts > 1 ? ` (${a.routing.attempts} attempts)` : ""}`
       : a.routing.source === "scope_check"
-        ? "server scope check · model not called"
-        : "keyword fallback · not model output";
+        ? "Refused by the server scope check — the model was not called"
+        : "Keyword fallback — not model output";
+  const doc = a.answer;
   return (
     <div className="answer" data-testid="ask-answer" data-mode={a.mode}>
-      <dl className="answer-meta">
-        <div>
-          <dt>Question</dt>
-          <dd>{a.question}</dd>
-        </div>
-        <div>
-          <dt>Interpreted as</dt>
-          <dd>
-            <strong data-testid="ask-intent">{a.intentLabel}</strong> <span className="muted">by {routedBy}</span>
-          </dd>
-        </div>
-        {a.tools.length > 0 && (
-          <div>
-            <dt>Records checked</dt>
-            <dd className="tool-chips" data-testid="ask-tools">
-              {a.tools.map((t) => (
-                <span key={t.name} className={`tool-chip ${t.requestedBy}`} title={t.requestedBy === "model" ? "Requested by the local model" : "Added by the server: required for the calculation"}>
-                  {t.name}
-                  <em>{t.requestedBy === "model" ? "model" : "server"}</em>
-                </span>
-              ))}
-            </dd>
-          </div>
-        )}
-      </dl>
-
       {a.stale && <Alert tone="warn">Your records changed while this answer was being prepared. Ask again for a current answer.</Alert>}
-
-      {a.findings.length > 0 && (
-        <div className="answer-block">
-          <h3>Finding</h3>
-          <ul data-testid="ask-findings">
-            {a.findings.map((f) => (
-              <li key={f}>{f}</li>
+      {doc ? (
+        <>
+          <h3 className="answer-headline" data-testid="ask-headline">
+            {doc.headline}
+          </h3>
+          {doc.items.length > 0 && (
+            <ol className="answer-items" data-testid="ask-findings">
+              {doc.items.map((it, i) => (
+                <li key={it.title + i}>
+                  <div className="ai-title">
+                    <strong>
+                      {i + 1}. {it.title}
+                    </strong>
+                    {it.tag && <Badge tone={it.tone === "ok" ? "ok" : it.tone === "bad" ? "bad" : it.tone === "warn" ? "warn" : "neutral"}>{it.tag}</Badge>}
+                  </div>
+                  <p>{it.detail}</p>
+                </li>
+              ))}
+            </ol>
+          )}
+          {doc.nextStep && (
+            <div className="next-step">
+              <h4>Your best next step</h4>
+              <p>{doc.nextStep}</p>
+            </div>
+          )}
+          {doc.clashes.length > 0 && (
+            <div className="clash-grid" data-testid="ask-clashes">
+              {doc.clashes.map((c) => (
+                <div key={c.optionId} className="clash-col">
+                  <strong>{c.label}</strong>
+                  <span className="muted text-xs">{c.window}</span>
+                  {c.sessions.length === 0 ? (
+                    <span className="clash-none">No class clashes</span>
+                  ) : (
+                    <ul>
+                      {c.sessions.map((s) => (
+                        <li key={s.id}>
+                          <span>{s.course}</span>
+                          <span className="muted text-xs">
+                            {s.type} · {s.when} · {s.room}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="answer-actions">
+            {doc.actions.map((act) => (
+              <button key={act} type="button" className={act === "compare" ? "btn btn-primary" : "btn btn-secondary"} onClick={() => go(act)} disabled={!!busy} data-testid={`ask-action-${act}`}>
+                {ACTION_LABEL[act]}
+              </button>
             ))}
-          </ul>
-        </div>
-      )}
-      {a.summary?.accepted && (
-        <div className="answer-block">
-          <h3>Model summary</h3>
-          <p>{a.summary.text}</p>
-        </div>
-      )}
-      {a.unknowns.length > 0 && (
-        <div className="answer-block unknown">
-          <h3>Still unknown</h3>
-          <ul>
-            {a.unknowns.map((u) => (
-              <li key={u}>{u}</li>
-            ))}
-          </ul>
-        </div>
+          </div>
+          {doc.verify.length > 0 && <p className="verify-note">Needs verification: {doc.verify.join(" ")}</p>}
+        </>
+      ) : (
+        <h3 className="answer-headline" data-testid="ask-headline">
+          {a.status === "unsupported" ? "CampusPilot can't answer that one." : "No answer could be computed."}
+        </h3>
       )}
       {a.notes.map((n) => (
         <Alert key={n} tone={a.status === "unsupported" ? "info" : "warn"}>
           {n}
         </Alert>
       ))}
-      <div className="answer-foot">
-        <span className="muted text-sm">
-          {a.sources.length ? `Sources: ${a.sources.map((s) => `${s.id} v${s.version}`).join(" · ")}` : "No records were read."} · nothing was changed
-        </span>
+      {a.summary?.accepted && (
+        <div className="next-step">
+          <h4>Model summary (validated)</h4>
+          <p>{a.summary.text}</p>
+        </div>
+      )}
+      <details className="disclosure inspector" data-testid="ask-inspector">
+        <summary>
+          <Cpu size={14} aria-hidden="true" /> How CampusPilot answered
+        </summary>
+        <dl className="answer-meta">
+          <div>
+            <dt>Question</dt>
+            <dd>{a.question}</dd>
+          </div>
+          <div>
+            <dt>Routing</dt>
+            <dd data-testid="ask-routing">{routedBy}</dd>
+          </div>
+          <div>
+            <dt>Interpreted as</dt>
+            <dd data-testid="ask-intent">{a.intentLabel}</dd>
+          </div>
+          {a.tools.length > 0 && (
+            <div>
+              <dt>Records checked</dt>
+              <dd data-testid="ask-tools">
+                <ul className="tool-list">
+                  {a.tools.map((t) => (
+                    <li key={t.name}>
+                      {TOOL_LABEL[t.name] ?? t.name} <span className="muted">— {t.requestedBy === "model" ? "requested by the model" : "added by the server (needed for the calculation)"}</span>{" "}
+                      <code>{t.name}</code>
+                    </li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          )}
+          <div>
+            <dt>Sources</dt>
+            <dd className="text-sm">{a.sources.length ? a.sources.map((s) => `${s.id} v${s.version} (${s.verification})`).join(" · ") : "None read"} · nothing was changed</dd>
+          </div>
+          <div>
+            <dt>Numbers</dt>
+            <dd className="text-sm">Computed by the deterministic engine from these records, not by the model.</dd>
+          </div>
+        </dl>
         <Link className="link text-sm" href={`/agents?run=${a.runId}`} data-testid="ask-trace">
-          <Cpu size={14} aria-hidden="true" /> View trace <ArrowRight size={13} aria-hidden="true" />
+          View the recorded trace <ArrowRight size={13} aria-hidden="true" />
         </Link>
-      </div>
+      </details>
     </div>
   );
 }

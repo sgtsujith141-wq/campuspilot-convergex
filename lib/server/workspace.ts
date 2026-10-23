@@ -172,6 +172,12 @@ export function workspaceSnapshot(db: Db, studentId: string, sessionExpiresAt: s
     opportunity,
     opportunities,
     session: { kind: "sample_login", expiresAt: sessionExpiresAt },
+    timetable: (() => {
+      const row = own.find((r) => r.record_type === "timetable");
+      if (!row) return null;
+      const p = JSON.parse(row.payload_json);
+      return { sourceId: row.id, label: row.label, version: row.version, verification: row.verification, partialWindow: p.plannedPartialWindow, sessions: p.sessions };
+    })(),
     policy: pol ? { threshold: pol.minimumAttendancePercent, isOfficial: pol.isOfficial, appliesTo: pol.appliesTo, notes: pol.notes } : null,
     mission: mission ? missionView(db, studentId, mission) : null,
     tasks: listOwnTasks(db, studentId).map(taskView),

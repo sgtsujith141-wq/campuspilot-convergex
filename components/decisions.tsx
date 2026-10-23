@@ -9,6 +9,7 @@ import { formatBlock, formatDateRange, formatIst, formatIstClock, formatIstStamp
 import { OPTION_LABEL, assignmentMoved, dueDuringEvent, missionState, registrationFor, registrationText } from "@/lib/present";
 import type { MissionView, WorkspaceSnapshot } from "@/lib/views";
 import { AskPanel } from "./ask";
+import { TimetableView } from "./timetable";
 import { Alert, Badge, Dialog, Spinner, cx } from "./ui";
 import { useWorkspace } from "./workspace";
 
@@ -236,10 +237,12 @@ function Comparison({ mission, ws }: { mission: MissionView; ws: WorkspaceSnapsh
   const recId = mission.result.recommendation.optionId;
 
   return (
-    <section className="panel" aria-labelledby="compare-title">
+    <section className="panel" id="compare" aria-labelledby="compare-title" style={{ scrollMarginTop: "5rem" }}>
       <div className="panel-head">
         <div>
-          <h2 id="compare-title">Compare options</h2>
+          <h2 id="compare-title" tabIndex={-1}>
+            Compare options
+          </h2>
           <div className="sub">Same records for all three · calculated by the deterministic engine, not a model</div>
         </div>
         <button className="link text-sm" onClick={() => setEvidence(true)}>
@@ -708,7 +711,7 @@ function Rail() {
           </li>
           <li>
             <span>Timetable</span>
-            <strong>Not connected</strong>
+            <strong>{ws.timetable ? "Synthetic sample, not VTOP" : "Not connected"}</strong>
           </li>
         </ul>
       </section>
@@ -834,6 +837,7 @@ export function DecisionStudio() {
               <PlanUpdate mission={m} ws={ws} />
               <AskPanel />
               <Comparison mission={m} ws={ws} />
+              <TimetableView />
               <Recommendation mission={m} />
               <ActionPlan mission={m} ws={ws} />
             </>
@@ -841,6 +845,7 @@ export function DecisionStudio() {
             <>
               <AskPanel />
               <MissionSetup />
+              <TimetableView />
             </>
           )}
         </div>

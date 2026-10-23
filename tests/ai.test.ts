@@ -47,6 +47,7 @@ function fakeModel(route: (question: string, messages: Msg[]) => string | ChatRe
 
 /** Behaves like a model that routes by topic (what the real model was observed to do). */
 const topical = fakeModel((q) => {
+  if (/class|lecture/i.test(q)) return JSON.stringify({ intent: "class_clashes", tools: ["get_my_timetable", "get_event"] });
   if (/verify|eligib|allowed/i.test(q)) return JSON.stringify({ intent: "verification", tools: ["verify_event_rules", "get_event"] });
   if (/deadline|clash|conflict/i.test(q)) return JSON.stringify({ intent: "deadline_conflicts", tools: ["get_my_commitments", "get_event"] });
   return JSON.stringify({ intent: "attendance_risk", tools: ["get_my_attendance"] });
@@ -162,6 +163,43 @@ describe("agent with a model that chooses tools", () => {
     const before = writeFootprint(db, MAYA_ID);
     await runAsk(db, MAYA_ID, "Should I attend the whole event or only part?", topical.provider);
     expect(writeFootprint(db, MAYA_ID)).toEqual(before);
+  });
+});
+
+describe("timetable and student-facing answers", () => {
+  it("a class-clash question runs the timetable tool and reports real overlaps per option", async () => {
+    const a = await runAsk(db, MAYA_ID, "Which classes clash with the hackathon, and what should I do?", topical.provider);
+    expect(a).toMatchObject({ mode: "local_llm", intent: "class_clashes" });
+    expect(a.tools.find((t) => t.name === "get_my_timetable")!.requestedBy).toBe("model");
+    const clashes = Object.fromEntries(a.answer!.clashes.map((c) => [c.optionId, c.sessions.map((s) => s.id)]));
+    expect(clashes).toEqual({ full: ["cls_ns_1029", "cls_db_1029", "cls_ns_1030"], partial: ["cls_ns_1029"], defer: [] });
+    expect(a.answer!.headline).toBe("Attending the full event clashes with three classes; selected sessions clash with one.");
+    expect(a.answer!.actions).toEqual(expect.arrayContaining(["timetable", "compare", "plan"]));
+    expect(a.sources.map((s) => s.id)).toContain("timetable_maya");
+  });
+  it("the deadline answer leads with a direct, dated, actionable response", async () => {
+    const a = await runAsk(db, MAYA_ID, "Which deadline conflicts with the hackathon?", topical.provider);
+    expect(a.answer!.headline).toBe("You have two academic commitments to plan around.");
+    expect(a.answer!.items.map((i) => i.tag)).toEqual(["Urgent", "Preparation needed"]);
+    expect(a.answer!.items[0].detail).toContain("work block on Oct 28, 6–9 PM");
+    expect(a.answer!.items[1].detail).toContain("16 hours after the event ends");
+    expect(a.answer!.nextStep).toMatch(/selected-session plan/);
+    expect(JSON.stringify(a.answer)).not.toMatch(/get_my_|\*\*/); // no raw tool names or literal markdown
+  });
+  it("keyword fallback routes class questions to the timetable without a model", async () => {
+    expect(fallbackRoute("Which classes clash with the hackathon, and what should I do?")).toBe("class_clashes");
+    const a = await runAsk(db, MAYA_ID, "Which classes clash with the hackathon, and what should I do?", null);
+    expect(a).toMatchObject({ mode: "deterministic", intent: "class_clashes" });
+    expect(a.answer!.clashes.find((c) => c.optionId === "full")!.sessions).toHaveLength(3);
+  });
+  it("existing databases gain the timetable without overwriting anything", async () => {
+    const { seedMissingSources } = await import("@/lib/server/seed");
+    run(db, "DELETE FROM source_history WHERE source_id = 'timetable_maya'");
+    run(db, "DELETE FROM source_records WHERE id = 'timetable_maya'");
+    const before = one<{ v: number }>(db, "SELECT version AS v FROM source_records WHERE id = 'assignment_db'")!.v;
+    seedMissingSources(db);
+    expect(one(db, "SELECT id FROM source_records WHERE id = 'timetable_maya'")).toBeTruthy();
+    expect(one<{ v: number }>(db, "SELECT version AS v FROM source_records WHERE id = 'assignment_db'")!.v).toBe(before);
   });
 });
 

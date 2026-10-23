@@ -88,6 +88,15 @@ export type WorkspaceSnapshot = {
   /** Curated catalogue the guided mission can be run against. */
   opportunities: OpportunityView[];
   session: { kind: "sample_login"; expiresAt: string | null };
+  /** Synthetic class timetable (sample records, not VTOP). */
+  timetable: {
+    sourceId: string;
+    label: string;
+    version: number;
+    verification: string;
+    partialWindow: { start: string; end: string; note: string };
+    sessions: { id: string; courseId: string; code: string; name: string; type: "Lecture" | "Lab"; start: string; end: string; room: string; instructor: string }[];
+  } | null;
   policy: { threshold: number; isOfficial: boolean; appliesTo: string; notes: string } | null;
   mission: MissionView | null;
   tasks: TaskView[];
@@ -139,6 +148,15 @@ export type AskView = {
   tools: AskToolView[];
   findings: string[];
   unknowns: string[];
+  /** Student-facing answer composed deterministically from the returned evidence. */
+  answer: {
+    headline: string;
+    items: { title: string; tag?: string; tone?: "bad" | "warn" | "ok" | "neutral"; detail: string }[];
+    nextStep: string | null;
+    clashes: { optionId: "full" | "partial" | "defer"; label: string; window: string; sessions: { id: string; course: string; type: string; when: string; room: string }[] }[];
+    verify: string[];
+    actions: ("timetable" | "compare" | "plan")[];
+  } | null;
   summary: { text: string; accepted: true } | { text: null; accepted: false; reason: string } | null;
   sources: { id: string; label: string; version: number; verification: string }[];
   notes: string[];

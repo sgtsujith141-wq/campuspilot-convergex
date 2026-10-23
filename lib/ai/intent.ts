@@ -2,12 +2,13 @@ import { z } from "zod";
 
 // What the local model is asked to decide, and how its answer is validated.
 
-export const INTENTS = ["attendance_risk", "deadline_conflicts", "verification", "participation_tradeoffs", "explain_recommendation", "unsupported"] as const;
+export const INTENTS = ["attendance_risk", "deadline_conflicts", "class_clashes", "verification", "participation_tradeoffs", "explain_recommendation", "unsupported"] as const;
 export type Intent = (typeof INTENTS)[number];
 
 export const INTENT_LABEL: Record<Intent, string> = {
   attendance_risk: "Attendance risk",
   deadline_conflicts: "Deadline conflicts",
+  class_clashes: "Class clashes",
   verification: "What still needs verification",
   participation_tradeoffs: "Participation trade-offs",
   explain_recommendation: "Why the recommendation",
@@ -22,7 +23,8 @@ export const AI_TOOLS = {
   get_my_attendance: "attendance counts (for attendance questions)",
   get_my_courses: "courses and classes still scheduled (for attendance questions)",
   get_applicable_policy: "minimum attendance rule (for attendance or rules questions)",
-  get_my_commitments: "assignment and exam dates (for deadline or clash questions)",
+  get_my_commitments: "assignment and exam dates (for deadline questions)",
+  get_my_timetable: "class timetable: lectures and labs with times (for class or lecture clash questions)",
   get_event: "hackathon dates and registration deadline (for clash or registration questions)",
   verify_event_rules: "official eligibility rules (for eligibility, permission or verification questions)",
 } as const;
@@ -33,6 +35,7 @@ export const AI_TOOL_NAMES = Object.keys(AI_TOOLS) as AiTool[];
 export const REQUIRED_TOOLS: Record<Intent, AiTool[]> = {
   attendance_risk: ["get_my_courses", "get_my_attendance", "get_applicable_policy"],
   deadline_conflicts: ["get_my_commitments", "get_event"],
+  class_clashes: ["get_my_timetable", "get_event"],
   verification: ["get_event", "verify_event_rules", "get_applicable_policy"],
   participation_tradeoffs: ["get_my_courses", "get_my_attendance", "get_applicable_policy", "get_my_commitments", "get_event"],
   explain_recommendation: ["get_my_courses", "get_my_attendance", "get_applicable_policy", "get_my_commitments", "get_event", "verify_event_rules"],
@@ -52,7 +55,7 @@ export const ROUTING_SCHEMA = {
 /** Prompt measured against llama3.2:1b on the presentation Mac (kept short: CPU prompt evaluation). */
 export const ROUTING_PROMPT =
   "Route a student's question about attending a hackathon. Choose one intent and only the tools needed. JSON only.\n" +
-  "Intents: attendance_risk, deadline_conflicts (assignments/exams clashing with the event), verification (eligibility, permission, OD approval, registration), " +
+  "Intents: attendance_risk, deadline_conflicts (assignments/exams clashing with the event), class_clashes (classes, lectures or labs clashing with the event), verification (eligibility, permission, OD approval, registration), " +
   "participation_tradeoffs (full vs part vs skip), explain_recommendation, unsupported (unrelated topics or other students).\n" +
   "Tools:\n" +
   AI_TOOL_NAMES.map((t) => `- ${t}: ${AI_TOOLS[t]}`).join("\n");
@@ -108,6 +111,7 @@ export function mentionsOtherStudent(question: string) {
 export function fallbackRoute(question: string): Intent {
   const q = question.toLowerCase();
   if (/(verify|eligib|allowed|permission|approv|\bod\b|on-duty|regist|rules?)/.test(q)) return "verification";
+  if (/(timetable|schedule)/.test(q) || (/(class|lecture|lab)/.test(q) && /(clash|conflict|overlap|miss)/.test(q))) return "class_clashes";
   if (/(deadline|due|assignment|project|exam|assessment|quiz|clash|conflict|overlap)/.test(q)) return "deadline_conflicts";
   if (/(recommend|why)/.test(q)) return "explain_recommendation";
   if (/(full|partial|part of|whole|skip|defer|sessions?)/.test(q)) return "participation_tradeoffs";
