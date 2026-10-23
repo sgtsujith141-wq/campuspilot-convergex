@@ -87,3 +87,38 @@ export function formatIstStamp(iso: string): string {
   const p = istParts(toMs(iso));
   return `${p.day} ${MONTHS[p.month - 1]}, ${clock(p.hour, p.minute)}`;
 }
+
+/** "Oct 29" (adds the year when asked). */
+export function formatIstDate(iso: string, withYear = false): string {
+  const p = istParts(toMs(iso));
+  return withYear ? `${MONTHS[p.month - 1]} ${p.day}, ${p.year}` : `${MONTHS[p.month - 1]} ${p.day}`;
+}
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** "Thu, Oct 22" in IST. */
+export function formatIstWeekday(iso: string): string {
+  const ms = toMs(iso);
+  const p = istParts(ms);
+  const dow = new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay();
+  return `${WEEKDAYS[dow]}, ${MONTHS[p.month - 1]} ${p.day}`;
+}
+
+/**
+ * Compact date range in IST: "Oct 29", "Oct 29–30", "Oct 30 – Nov 2", "Dec 31, 2026 – Jan 2, 2027".
+ * Derived from data so no month or year is ever hard-coded in the UI.
+ */
+export function formatDateRange(startIso: string, endIso: string): string {
+  const a = istParts(toMs(startIso));
+  const b = istParts(toMs(endIso));
+  if (a.year !== b.year) return `${MONTHS[a.month - 1]} ${a.day}, ${a.year} – ${MONTHS[b.month - 1]} ${b.day}, ${b.year}`;
+  if (a.month !== b.month) return `${MONTHS[a.month - 1]} ${a.day} – ${MONTHS[b.month - 1]} ${b.day}`;
+  if (a.day !== b.day) return `${MONTHS[a.month - 1]} ${a.day}–${b.day}`;
+  return `${MONTHS[a.month - 1]} ${a.day}`;
+}
+
+/** Calendar-day key in IST, for grouping timeline entries. */
+export function istDayKey(iso: string): string {
+  const p = istParts(toMs(iso));
+  return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+}

@@ -101,7 +101,7 @@ export type CourseProjection = {
 };
 
 export type UnknownCondition = {
-  id: "event_eligibility" | "od_approval" | "attendance_regulation" | "timetable_slots";
+  id: "event_eligibility" | "od_approval" | "attendance_regulation" | "timetable" | "source_freshness";
   label: string;
   status: "NEEDS_VERIFICATION";
   reason: string;
@@ -118,6 +118,17 @@ export type Conflict = {
 
 export type TimeBlock = { start: string; end: string };
 
+/** Registration state relative to the scenario clock. "unverified" = no deadline on record. */
+export type RegistrationStatus = "open" | "closing_soon" | "closed" | "unverified";
+export type RegistrationFacts = {
+  status: RegistrationStatus;
+  deadline: string | null;
+  /** Whole hours until the deadline (negative once closed); null when unverified. */
+  hoursRemaining: number | null;
+  /** Whether the listing itself comes from a verified official source. */
+  sourceVerified: boolean;
+};
+
 export type TaskDraft = {
   taskKey: string;
   type: "create_local_task";
@@ -133,6 +144,9 @@ export type DecisionOption = {
   label: string;
   badge: string;
   description: string;
+  /** Data-derived absence estimate, e.g. "Scenario estimate: 2 Network Security classes, 1 Database Systems class". */
+  absenceSummary: string;
+  totalAbsences: number;
   participates: boolean;
   projections: CourseProjection[];
   /** Status of the most constrained course under the configured policy. */
@@ -165,7 +179,10 @@ export type PlanResult = {
     registrationDeadline: string;
     policyThreshold: number | null;
     policyIsOfficial: boolean;
+    registration: RegistrationFacts;
   };
+  /** Evidence older than the freshness window relative to the scenario clock. */
+  freshness: { maxAgeHours: number; stale: string[] };
   options: DecisionOption[];
   recommendation: Recommendation;
   conflicts: Conflict[];
