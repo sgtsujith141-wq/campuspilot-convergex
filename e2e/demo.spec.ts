@@ -64,7 +64,7 @@ test("sample login → home shows derived, data-driven state", async () => {
 test("presentation intro plays only with ?intro=1, can be skipped, and reveals the real Home", async () => {
   await page.goto("/overview?intro=1");
   await expect(page.getByTestId("intro")).toBeVisible();
-  await expect(page.getByText("Information is everywhere.")).toBeVisible();
+  await expect(page.getByText("AI can answer almost any question.")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("intro")).toHaveCount(0);
   await expect(page.getByTestId("summary")).toBeVisible();
