@@ -8,6 +8,7 @@ import { formatPercent } from "@/lib/core/attendance";
 import { formatBlock, formatDateRange, formatIst, formatIstClock, formatIstStamp } from "@/lib/core/time";
 import { OPTION_LABEL, assignmentMoved, dueDuringEvent, missionState, registrationFor, registrationText } from "@/lib/present";
 import type { MissionView, WorkspaceSnapshot } from "@/lib/views";
+import { AskPanel } from "./ask";
 import { Alert, Badge, Dialog, Spinner, cx } from "./ui";
 import { useWorkspace } from "./workspace";
 
@@ -830,12 +831,16 @@ export function DecisionStudio() {
           {m ? (
             <>
               <PlanUpdate mission={m} ws={ws} />
+              <AskPanel />
               <Comparison mission={m} ws={ws} />
               <Recommendation mission={m} />
               <ActionPlan mission={m} ws={ws} />
             </>
           ) : (
-            <MissionSetup />
+            <>
+              <AskPanel />
+              <MissionSetup />
+            </>
           )}
         </div>
         <Rail />

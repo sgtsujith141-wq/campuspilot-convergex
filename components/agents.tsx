@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight, ListTree } from "lucide-react";
 import { formatIstClock, formatIstStamp } from "@/lib/core/time";
 import { RUN_KIND_LABEL, stepLabel } from "@/lib/present";
@@ -35,6 +35,9 @@ function Step({ e, showTime }: { e: TraceEventView; showTime: boolean }) {
           <span className="actor">{e.actor}</span>
         </div>
         <p>{e.summary}</p>
+        {e.requestedBy && e.requestedBy !== "workflow" && (
+          <span className={cx("by", e.requestedBy)}>{e.requestedBy === "model" ? "Requested by the local model" : "Added by the server (required for the calculation)"}</span>
+        )}
         <details>
           <summary>
             <ChevronRight size={12} aria-hidden="true" /> Inspect
@@ -52,6 +55,8 @@ function Step({ e, showTime }: { e: TraceEventView; showTime: boolean }) {
             <dd>{e.tool ? duration(e.durationMs) : "n/a"}</dd>
             <dt>Mode</dt>
             <dd>{e.mode}</dd>
+            <dt>Requested by</dt>
+            <dd>{e.requestedBy ?? "—"}</dd>
             <dt>Recorded</dt>
             <dd>{e.startedAt}</dd>
             {e.error && (
@@ -70,6 +75,8 @@ function Step({ e, showTime }: { e: TraceEventView; showTime: boolean }) {
 export function AgentActivity() {
   const { ws } = useWorkspace();
   const [picked, setPicked] = useState<string | null>(null);
+  // Deep link from an answer: /agents?run=<id>
+  useEffect(() => setPicked(new URLSearchParams(window.location.search).get("run")), []);
   const runs = ws.runs;
   const run = runs.find((r) => r.id === picked) ?? runs[0];
   const toolCalls = run?.events.filter((e) => e.tool).length ?? 0;
@@ -83,8 +90,8 @@ export function AgentActivity() {
           <h1>Activity</h1>
           <p className="lede">How CampusPilot reached your current plan. Every entry below was recorded by the server while the workflow ran.</p>
         </div>
-        <div className="actions">
-          <Badge tone="warn">Deterministic agent workflow · no model</Badge>
+        <div className="actions" data-testid="run-mode">
+          {run?.mode === "local_llm" ? <Badge tone="accent">Local model · {run.model}</Badge> : <Badge tone="warn">Deterministic workflow · no model</Badge>}
         </div>
       </header>
 
@@ -114,9 +121,9 @@ export function AgentActivity() {
                 {runs.map((r) => (
                   <li key={r.id}>
                     <button className="run-btn" aria-current={r.id === run.id ? "true" : undefined} onClick={() => setPicked(r.id)} data-kind={r.kind}>
-                      <strong>{RUN_KIND_LABEL[r.kind]}</strong>
+                      <strong>{r.kind === "ask" ? `Asked: ${r.summary.split(":")[0]}` : RUN_KIND_LABEL[r.kind]}</strong>
                       <span data-dynamic>
-                        Revision {r.revision} · {formatIstStamp(r.startedAt)} IST
+                        {r.kind === "ask" ? (r.mode === "local_llm" ? `Local model · ${r.model}` : "Fallback · no model") : `Revision ${r.revision}`} · {formatIstStamp(r.startedAt)} IST
                       </span>
                     </button>
                   </li>
@@ -160,7 +167,7 @@ export function AgentActivity() {
             <dl className="run-summary">
               <div>
                 <dt>Mode</dt>
-                <dd>Deterministic</dd>
+                <dd>{run.mode === "local_llm" ? "Local LLM" : "Deterministic"}</dd>
               </div>
               <div>
                 <dt>Tool calls</dt>
@@ -172,7 +179,7 @@ export function AgentActivity() {
               </div>
               <div>
                 <dt>Model</dt>
-                <dd>None</dd>
+                <dd>{run.model ?? "None"}</dd>
               </div>
             </dl>
             <ol className="steps">
@@ -211,8 +218,8 @@ export function AgentActivity() {
 
       <div style={{ marginTop: "1.25rem" }}>
         <Alert tone="info">
-          These steps are a fixed, deterministic sequence of scoped tool calls — not autonomous model reasoning. A run would only be labelled “Live AI agent” if the server recorded real model calls,
-          and no model is configured in this build.
+          Guided evaluations and re-plans are a fixed, deterministic sequence of scoped tool calls. Question runs marked “Local model” were routed by a real call to the model running on
+          this computer: it chose the intent and some tools; the server added any evidence a calculation needs and computed every number. Nothing here is autonomous model reasoning.
         </Alert>
       </div>
     </div>

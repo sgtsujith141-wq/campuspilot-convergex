@@ -72,5 +72,7 @@ describe("activity step labels", () => {
     expect(stepLabel({ ...base, actor: "Source watcher", tool: null, summary: "This mission (revision 1)…", args: null })).toBe("Identified the affected plan");
     expect(stepLabel({ ...base, actor: "Approval gateway", tool: null, summary: "Invalidated 1 approval", args: null })).toBe("Invalidated the outdated approval");
     expect(stepLabel({ ...base, actor: "Permission checkpoint", tool: null, summary: "", args: null })).toBe("Requested your approval");
+    expect(stepLabel({ ...base, actor: "Permission checkpoint", tool: null, summary: "Read-only investigation: nothing changed", args: null })).toBe("Confirmed nothing was changed");
+    expect(stepLabel({ ...base, actor: "Local AI coordinator", tool: null, summary: "", args: { model: "m" } })).toBe("Local model interpreted the question");
   });
 });

@@ -191,7 +191,7 @@ export function stepLabel(e: TraceEventView): string {
   if (e.tool) return TOOL_LABEL[e.tool] ?? e.tool;
   if (e.actor === "Source watcher") return e.summary.startsWith("SOURCE_UPDATED") ? "Detected a source update" : "Identified the affected plan";
   if (e.actor === "Approval gateway") return e.summary.startsWith("Invalidated") ? "Invalidated the outdated approval" : "Checked existing approvals";
-  if (e.actor === "Permission checkpoint") return "Requested your approval";
+  if (e.actor === "Permission checkpoint") return e.summary.startsWith("Read-only") ? "Confirmed nothing was changed" : "Requested your approval";
   if (e.actor === "Personal orchestrator") return "Started the guided workflow";
   if (e.actor === "Local AI coordinator") {
     if (e.status !== "succeeded") return e.args?.purpose === "summary" ? "Model summary not shown" : "Local model output not used";

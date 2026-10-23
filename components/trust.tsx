@@ -87,8 +87,17 @@ export function TrustCenter() {
     { name: "Student record isolation", what: "Every request is scoped to the signed-in student by the server. Another student's record gets the same 403 as one that doesn't exist.", status: "enforced" },
     { name: "Authorized tools", what: "Each agent role has an allowlist and strict argument schemas. Identity is injected by the server, so no tool can be pointed at another student.", status: "enforced" },
     { name: "Local action approval", what: "Only the approval gateway creates tasks, pinned to a plan revision. Outdated approvals are refused; retries never duplicate or reinstate.", status: "enforced" },
+    {
+      name: "Local AI boundary",
+      what: "The local model only chooses among six read-only tools. It never receives identifiers, cannot write anything, and its output is schema-validated; every number comes from the deterministic engine.",
+      status: "enforced",
+    },
     { name: "Request hygiene", what: "Changes must be same-origin JSON within a size cap; malformed IDs are refused before any lookup; denials are audited.", status: "enforced" },
-    { name: "Untrusted content", what: "Event text is stored as data and never selects tools. Tested with a hostile notice in the deterministic workflow — not against a live model, because none is configured.", status: "partial" },
+    {
+      name: "Untrusted content",
+      what: "Event text is stored as data and never sent to the model. Hostile questions were tried against the real local model; the gateway kept every call scoped. Prompt injection is not solved in general.",
+      status: "partial",
+    },
     { name: "Source trust", what: "Records are versioned and labelled synthetic. The event listing and the attendance policy are unverified.", status: "partial" },
     {
       name: "Session",
@@ -275,6 +284,7 @@ export function TrustCenter() {
               <li>Revision-pinned, idempotent approvals</li>
               <li>Automatic re-planning on source change</li>
               <li>Scoped agent tools with recorded traces</li>
+              <li>Local model (llama3.2:1b) routing questions to tools</li>
             </ul>
           </div>
           <div>
@@ -297,7 +307,7 @@ export function TrustCenter() {
             <h3>Not implemented</h3>
             <ul>
               <li>VTOP or any university system</li>
-              <li>Live AI model orchestration</li>
+              <li>Cloud AI models; model-written answers</li>
               <li>On-duty approval or eligibility checks</li>
               <li>Institutional SSO, rate limiting</li>
             </ul>
