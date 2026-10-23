@@ -13,7 +13,7 @@ with no VTOP connection.*
 4. Warm-up: ask any suggested question once, then **Reset demo** again.
 5. Open http://localhost:3000/overview?intro=1, press **Esc** to check it, then leave the tab on that URL.
    (Replay any time: profile menu → *Play presentation intro*.)
-6. Zoom 100–125%. Keep `prototype/index.html` open in another tab.
+6. Press **P** for presentation mode; use the top-bar links (Home · Decisions · Activity · Security) to move between screens. Zoom 100–125%. Keep `prototype/index.html` open in another tab.
 
 ## Script (3:00)
 
@@ -64,7 +64,7 @@ Click **Move deadline to Oct 28, 7:00 PM** and pause on the three steps:
 - **Real?** Activity shows `local_llm`, model `llama3.2:1b`, with timings. `reports/ai-smoke.json` has a recorded run.
 - **Why doesn't the model write the answer?** 1.2B on a CPU misstated a percentage in our tests, so answers are composed from verified evidence.
 - **Timetable?** Synthetic sample records, not VTOP, not institutionally verified.
-- **Another student's data?** The model never gets identifiers and can only pick six read-only tools; the server injects identity.
+- **Another student's data?** The model never gets identifiers and can only pick seven read-only tools; the server injects identity.
 - **Impact?** Not measured — we won't invent numbers.
 
 ## Contingency

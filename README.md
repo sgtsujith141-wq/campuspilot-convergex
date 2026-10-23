@@ -21,6 +21,9 @@ actions**, with a small local model that chooses *how to investigate* — never 
 > university system. The local model (`llama3.2:1b`, 1.2B parameters, via Ollama on the same
 > computer) only routes questions to read-only tools; every number comes from ordinary code.
 
+**Round 2 (23 Oct 2026):** PS2 / Track 1 coverage, limits and test evidence are in
+[`docs/ROUND2_PS2_COMPLIANCE.md`](docs/ROUND2_PS2_COMPLIANCE.md) and [`docs/round2/`](docs/round2/README.md).
+
 ## Run it
 
 Requires Node.js **≥ 22.13** (built-in `node:sqlite`; developed and tested on Node 24).
@@ -37,7 +40,8 @@ is labelled "Offline · keyword fallback". Configuration: `.env.example`, detail
 `docs/AI_ARCHITECTURE.md`.
 
 1. Open http://localhost:3000 → **Open Maya's sample workspace**.
-2. Press **P** for presentation mode (sidebar hides, type scales up).
+2. Press **P** for presentation mode (sidebar hides, type scales up, and a compact Home · Decisions ·
+   Activity · Security navigation appears in the top bar).
 3. Reset between rehearsals: **Decisions → Controlled demo → Reset demo** (or `npm run db:reset`
    with the server stopped).
 
@@ -48,11 +52,11 @@ prototype from the build kit.
 
 | | Capability |
 |---|---|
-| **Real local-model inference** | `llama3.2:1b` (Ollama 0.35.1, loopback) interprets the student's question into one of six intents and selects read-only tools via schema-constrained JSON; recorded as `mode=local_llm` with the model name in the trace. Verified by `npm run ai:smoke` (`reports/ai-smoke.json`) and `e2e/ai-live.spec.ts` on the presentation Mac. |
+| **Real local-model inference** | `llama3.2:1b` (Ollama 0.35.1, loopback) interprets the student's question into one of seven intents (six answerable plus `unsupported`) and selects read-only tools via schema-constrained JSON; recorded as `mode=local_llm` with the model name in the trace. Verified by `npm run ai:smoke` (`reports/ai-smoke.json`) and `e2e/ai-live.spec.ts` on the presentation Mac. |
 | **Deterministic backend (verified by tests)** | Attendance projections 74.2 / 77.4 / 80.6% · conflicts · registration status · conditional recommendation · per-student isolation over real HTTP · revision-pinned idempotent approvals · local task execution with read-back · source change → replan → approval invalidated · scoped tool gateway · WCAG 2.1 A/AA automated scans · 320–1440 px layouts |
 | **Implemented, not independently verified** | Security headers in a real deployment · browsers other than Chromium · manual screen-reader use · routing quality beyond the tested questions |
-| **Synthetic demo data** | Student, second test profile, event, academic records, 75% policy · the deadline change (controlled demo) · sign-in (sample login) |
-| **Not implemented** | VTOP / ERP integration · cloud AI models · model-written answers (off: unreliable at 1B) · on-duty approval or eligibility verification · institutional SSO · rate limiting · class timetable |
+| **Synthetic demo data** | Student, second test profile, event, academic records, class timetable (Oct 26–30), 75% policy · the deadline change (controlled demo) · sign-in (sample login) |
+| **Not implemented** | VTOP / ERP integration · cloud AI models · model-written answers (off: unreliable at 1B) · on-duty approval or eligibility verification · institutional SSO · rate limiting · energy management · institution-wide operations (rooms, labs, staff) · physical campus security |
 
 ## Screens (routes unchanged since v1)
 
@@ -144,5 +148,5 @@ minimum text; WCAG AA contrast (axe-core scans pass on every screen at 1440 and 
   registered for the event yet.
 - Planning uses the seed's scenario clock (22 Oct 2026, 9:00 PM IST); real timestamps are used for
   approvals, audit, traces and source updates.
-- Suggested work blocks and missed-class counts are estimates; no timetable is connected.
+- Suggested work blocks are proposals; the class timetable is synthetic sample data (not VTOP), and the missed-class counts agree with it (unit-tested).
 - One process, one SQLite file, CPU inference — a local demo, not a deployment.

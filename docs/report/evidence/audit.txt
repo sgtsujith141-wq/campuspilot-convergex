@@ -1,0 +1,30 @@
+11:29:29 AM
+mission.approve → msn_other_demo
+Denied 403
+11:29:29 AM
+mission.read → msn_other_demo
+Denied 403
+11:29:29 AM
+course.read → oth_course_ns
+Denied 403
+11:29:25 AM
+demo.source_change → assignment_db
+Allowed
+11:29:24 AM
+mission.approve → msn_26b21742bed542ec
+Allowed
+11:29:22 AM
+mission.evaluate → msn_26b21742bed542ec
+Allowed
+11:29:20 AM
+ai.ask
+Allowed
+11:29:11 AM
+demo.reset
+Allowed
+11:29:11 AM
+session.sample_login
+Allowed
+11:28:34 AM
+mission.approve → msn_other_demo
+Denied 403

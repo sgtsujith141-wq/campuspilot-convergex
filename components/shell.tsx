@@ -141,9 +141,21 @@ function Topbar() {
   const current = NAV.find((n) => n.href === pathname)?.label ?? "Home";
   return (
     <header className="topbar">
-      <div className="where">
-        <strong>{current}</strong>
-      </div>
+      {pitch ? (
+        // Presentation mode hides the sidebar, so the four screens stay reachable from the top bar.
+        <nav className="pitch-nav" aria-label="Main (presentation)" data-testid="pitch-nav">
+          <BrandMark size={20} />
+          {NAV.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} aria-current={pathname === href ? "page" : undefined}>
+              <Icon size={16} aria-hidden="true" /> {label}
+            </Link>
+          ))}
+        </nav>
+      ) : (
+        <div className="where">
+          <strong>{current}</strong>
+        </div>
+      )}
       <div className="mobile-brand">
         <BrandMark size={20} /> CampusPilot
       </div>

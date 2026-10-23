@@ -35,7 +35,7 @@ POST /api/ai/ask {question}          (session cookie → studentId; body may con
  3. Model routing  ── llama3.2:1b via Ollama /api/chat, format = ROUTING_SCHEMA, temperature 0,
                      ≤96 tokens, 25 s timeout; output parsed strictly (extra fields → invalid);
                      one retry; then a labelled keyword fallback (mode = deterministic)
- 4. Tool execution ── each tool name checked against the six read-only tools the model may pick;
+ 4. Tool execution ── each tool name checked against the seven read-only tools the model may pick;
                      others refused and traced as "denied"; tools run via invokeTool() with
                      server-injected identity and event ID; the server adds any evidence the
                      calculation needs (tagged requested_by = server)
@@ -57,7 +57,7 @@ Required evidence per intent (added by the server if the model omitted it):
 | deadline_conflicts | commitments, event | `findConflicts` messages |
 | verification | event, event rules, policy | registration status + eligibility / OD / regulation unknowns |
 | participation_tradeoffs | courses, attendance, policy, commitments, event | per-option projection and classes missed |
-| explain_recommendation | all six | recommendation headline and reasons |
+| explain_recommendation | six (all except the timetable) | recommendation headline and reasons |
 
 ## 3. Boundaries (enforced by the server, not by the model)
 
@@ -118,7 +118,7 @@ and is labelled as the keyword fallback.
 ## 7. Limitations
 
 - One small model on CPU: good at routing the supported questions, unreliable at prose.
-- Routing is limited to six intents about one event; anything else is refused.
+- Routing is limited to six answerable intents (plus `unsupported`) about one event; anything else is refused.
 - The keyword fallback is a convenience, not AI, and is labelled that way.
 - Prompt injection is not "solved": the guarantee is that the gateway scopes every call, whatever
   the model outputs.

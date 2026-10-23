@@ -296,8 +296,16 @@ test("presentation mode: P hides the sidebar and enlarges type, P again restores
   await page.keyboard.press("p");
   await expect(page.locator(".sidebar")).toBeHidden();
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).fontSize)).not.toBe(before);
+  // Without the sidebar, all four screens stay reachable from the top bar.
+  const pitchNav = page.getByTestId("pitch-nav");
+  await expect(pitchNav.getByRole("link")).toHaveCount(4);
+  await pitchNav.getByRole("link", { name: "Activity" }).click();
+  await expect(page).toHaveURL(/\/agents$/);
+  await pitchNav.getByRole("link", { name: "Decisions" }).click();
+  await expect(page).toHaveURL(/\/decisions$/);
   await page.keyboard.press("p");
   await expect(page.locator(".sidebar")).toBeVisible();
+  await expect(page.getByTestId("pitch-nav")).toHaveCount(0);
 });
 
 test("demo reset restores the seed scenario through the UI", async () => {

@@ -1,0 +1,16 @@
+Your own course record
+GET /api/courses/course_ns
+200 OK
+Expected 200 · received 200 in 13 ms · as expected
+Another student's attendance
+GET /api/courses/oth_course_ns
+403 FORBIDDEN
+Expected 403 · received 403 in 5 ms · as expected
+Another student's decision
+GET /api/mission/msn_other_demo
+403 FORBIDDEN
+Expected 403 · received 403 in 4 ms · as expected
+Approve another student's plan
+POST /api/mission/msn_other_demo/approve
+403 FORBIDDEN
+Expected 403 · received 403 in 5 ms · as expected

@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 682" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+  <title id="t">CampusPilot architecture at commit 34c743a</title>
+  <desc id="d">Request flow from the student UI through the local AI router, tool gateway, data sources, deterministic engine, approval gateway, local tasks and replanning, with cross-cutting server components and planned items. Solid borders are implemented, dashed are simulated, dotted are planned or not implemented.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#142d35"/>
+    </marker>
+    <style>
+      .impl { fill: #ffffff; stroke: #11716c; stroke-width: 2.2; }
+      .sim { fill: #fbf5e6; stroke: #a8720f; stroke-width: 2.2; stroke-dasharray: 7 4; }
+      .plan { fill: #f1f1ee; stroke: #7d8481; stroke-width: 1.8; stroke-dasharray: 2 4; }
+      .h { font-size: 15.5px; font-weight: 700; fill: #142d35; }
+      .b { font-size: 13px; fill: #33433f; }
+      .ti { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; fill: #11716c; }
+      .ts { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; fill: #8a5c08; }
+      .tp { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; fill: #5e6562; }
+      .band { font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; fill: #142d35; }
+      .ln { stroke: #142d35; stroke-width: 1.8; fill: none; }
+      .lnd { stroke: #142d35; stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
+      .cap { font-size: 12px; fill: #142d35; font-style: italic; }
+    </style>
+  </defs>
+
+  <text class="band" x="20" y="24">REQUEST AND DECISION FLOW</text>
+
+  <!-- Row 1: left to right -->
+  <rect class="impl" x="20" y="36" width="225" height="124" rx="8"/>
+  <text class="h" x="34" y="60">1 · Student UI</text>
+  <text class="b" x="34" y="82">Next.js 16 · React 19</text>
+  <text class="b" x="34" y="100">Home, Decisions, Activity,</text>
+  <text class="b" x="34" y="118">Security · Ask panel</text>
+  <text class="ti" x="34" y="148">IMPLEMENTED</text>
+
+  <rect class="impl" x="265" y="36" width="225" height="124" rx="8"/>
+  <text class="h" x="279" y="60">2 · Local AI router</text>
+  <text class="b" x="279" y="82">scope check first (no model)</text>
+  <text class="b" x="279" y="100">llama3.2:1b · Ollama · loopback</text>
+  <text class="b" x="279" y="118">JSON schema → intent + tools</text>
+  <text class="ti" x="279" y="148">IMPLEMENTED · REAL INFERENCE</text>
+
+  <rect class="impl" x="510" y="36" width="225" height="124" rx="8"/>
+  <text class="h" x="524" y="60">3 · Tool gateway</text>
+  <text class="b" x="524" y="82">invokeTool(): role allowlists</text>
+  <text class="b" x="524" y="100">strict schemas · budget 30</text>
+  <text class="b" x="524" y="118">identity injected by server</text>
+  <text class="ti" x="524" y="148">IMPLEMENTED</text>
+
+  <rect class="sim" x="755" y="36" width="225" height="124" rx="8"/>
+  <text class="h" x="769" y="60">4 · Data sources</text>
+  <text class="b" x="769" y="82">synthetic academic records</text>
+  <text class="b" x="769" y="100">timetable · event · 75% policy</text>
+  <text class="b" x="769" y="118">versioned · owner-scoped</text>
+  <text class="ts" x="769" y="148">SIMULATED · SYNTHETIC DATA</text>
+
+  <path class="ln" d="M245 98H263" marker-end="url(#a)"/>
+  <path class="ln" d="M490 98H508" marker-end="url(#a)"/>
+  <path class="ln" d="M735 98H753" marker-end="url(#a)"/>
+  <path class="ln" d="M867 160V214" marker-end="url(#a)"/>
+
+  <!-- Row 2: right to left -->
+  <rect class="impl" x="755" y="216" width="225" height="124" rx="8"/>
+  <text class="h" x="769" y="240">5 · Deterministic engine</text>
+  <text class="b" x="769" y="262">100×(A+H−M)/(T+H)</text>
+  <text class="b" x="769" y="280">conflicts · class clashes</text>
+  <text class="b" x="769" y="298">3 options → conditional pick</text>
+  <text class="ti" x="769" y="328">IMPLEMENTED</text>
+
+  <rect class="impl" x="510" y="216" width="225" height="124" rx="8"/>
+  <text class="h" x="524" y="240">6 · Approval gateway</text>
+  <text class="b" x="524" y="262">explicit consent per revision</text>
+  <text class="b" x="524" y="280">stale 409 · infeasible 422</text>
+  <text class="b" x="524" y="298">idempotent, never reinstated</text>
+  <text class="ti" x="524" y="328">IMPLEMENTED</text>
+
+  <rect class="impl" x="265" y="216" width="225" height="124" rx="8"/>
+  <text class="h" x="279" y="240">7 · Local tasks</text>
+  <text class="b" x="279" y="262">created only after approval</text>
+  <text class="b" x="279" y="280">read back from the server</text>
+  <text class="b" x="279" y="298">not sent to calendar or VTOP</text>
+  <text class="ti" x="279" y="328">IMPLEMENTED · LOCAL ONLY</text>
+
+  <rect class="impl" x="20" y="216" width="225" height="124" rx="8"/>
+  <text class="h" x="34" y="240">8 · Replanning</text>
+  <text class="b" x="34" y="262">SOURCE_UPDATED event</text>
+  <text class="b" x="34" y="280">engine re-run → revision n+1</text>
+  <text class="b" x="34" y="298">old approval invalidated</text>
+  <text class="ti" x="34" y="318">IMPLEMENTED</text>
+  <text class="ts" x="34" y="333">TRIGGER SIMULATED</text>
+
+  <path class="ln" d="M755 278H737" marker-end="url(#a)"/>
+  <path class="ln" d="M510 278H492" marker-end="url(#a)"/>
+  <path class="lnd" d="M265 278H247" marker-end="url(#a)"/>
+
+  <!-- Replanning loop back to the engine -->
+  <path class="lnd" d="M132 340V372H867V342" marker-end="url(#a)"/>
+  <text class="cap" x="500" y="392" text-anchor="middle">a source record changes → the engine re-runs on the new version → revision n+1 → earlier approval invalidated, tasks flagged “needs review”</text>
+
+  <!-- Cross-cutting -->
+  <text class="band" x="20" y="428">CROSS-CUTTING SERVER COMPONENTS</text>
+  <rect class="impl" x="20" y="440" width="225" height="100" rx="8"/>
+  <text class="h" x="34" y="463">SQLite</text>
+  <text class="b" x="34" y="484">node:sqlite · WAL · schema v3</text>
+  <text class="ti" x="34" y="527">IMPLEMENTED</text>
+
+  <rect class="impl" x="265" y="440" width="225" height="100" rx="8"/>
+  <text class="h" x="279" y="463">Sessions</text>
+  <text class="b" x="279" y="484">httpOnly SameSite=Strict cookie</text>
+  <text class="ti" x="279" y="527">IMPLEMENTED ·</text>
+  <text class="ts" x="379" y="527">SAMPLE LOGIN</text>
+
+  <rect class="impl" x="510" y="440" width="225" height="100" rx="8"/>
+  <text class="h" x="524" y="463">Trace and audit log</text>
+  <text class="b" x="524" y="484">every model and tool call;</text>
+  <text class="b" x="524" y="501">every denial recorded</text>
+  <text class="ti" x="524" y="527">IMPLEMENTED</text>
+
+  <rect class="impl" x="755" y="440" width="225" height="100" rx="8"/>
+  <text class="h" x="769" y="463">Request guards</text>
+  <text class="b" x="769" y="484">16 KB stream cap · same-origin</text>
+  <text class="b" x="769" y="501">Sec-Fetch-Site · ID format · CSP</text>
+  <text class="ti" x="769" y="527">IMPLEMENTED</text>
+
+  <!-- Planned / not implemented -->
+  <text class="band" x="20" y="578">PLANNED OR NOT IMPLEMENTED</text>
+  <rect class="plan" x="20" y="590" width="225" height="62" rx="8"/>
+  <text class="h" x="34" y="613">VTOP / ERP connector</text>
+  <text class="tp" x="34" y="639">PLANNED · NEEDS AUTHORISATION</text>
+
+  <rect class="plan" x="265" y="590" width="225" height="62" rx="8"/>
+  <text class="h" x="279" y="613">Institutional SSO</text>
+  <text class="tp" x="279" y="639">PLANNED</text>
+
+  <rect class="plan" x="510" y="590" width="225" height="62" rx="8"/>
+  <text class="h" x="524" y="613">Rate limiting, deployment</text>
+  <text class="tp" x="524" y="639">PLANNED</text>
+
+  <rect class="plan" x="755" y="590" width="225" height="62" rx="8"/>
+  <text class="h" x="769" y="613">Energy and facilities</text>
+  <text class="tp" x="769" y="639">NOT IMPLEMENTED</text>
+
+  <!-- Legend -->
+  <rect class="impl" x="20" y="664" width="26" height="12" rx="3"/>
+  <text class="b" x="54" y="675">Implemented (solid border)</text>
+  <rect class="sim" x="290" y="664" width="26" height="12" rx="3"/>
+  <text class="b" x="324" y="675">Simulated or synthetic (dashed)</text>
+  <rect class="plan" x="590" y="664" width="26" height="12" rx="3"/>
+  <text class="b" x="624" y="675">Planned or not implemented (dotted)</text>
+</svg>

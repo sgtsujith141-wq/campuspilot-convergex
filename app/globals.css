@@ -730,6 +730,12 @@ html.pitch-mode .app { grid-template-columns: minmax(0, 1fr); background: var(--
 html.pitch-mode .sidebar { display: none; }
 html.pitch-mode .page { max-width: 80rem; }
 html.pitch-mode .answer-block li, html.pitch-mode .answer-meta dd { font-size: 1rem; }
+.pitch-nav { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
+.pitch-nav svg:first-child { margin-right: 0.5rem; flex: none; }
+.pitch-nav a { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.pitch-nav a:hover { background: var(--surface-2); color: var(--text); }
+.pitch-nav a[aria-current="page"] { background: var(--accent-soft, rgba(17, 113, 108, 0.1)); color: var(--accent); }
+@media (max-width: 900px) { .pitch-nav { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
