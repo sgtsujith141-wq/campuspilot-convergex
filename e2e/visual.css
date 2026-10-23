@@ -1,0 +1,3 @@
+/* Applied only while taking visual-regression screenshots. The audit log grows with whatever ran
+   before (its rows are already masked); a fixed height keeps the page layout comparable. */
+[data-testid="audit"] { height: 14rem; overflow: hidden; }

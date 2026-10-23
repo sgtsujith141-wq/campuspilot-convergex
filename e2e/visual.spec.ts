@@ -1,3 +1,4 @@
+import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
 // Reviewed visual baselines (e2e/visual.spec.ts-snapshots). They are generated on macOS and
@@ -7,7 +8,13 @@ test.skip(process.platform !== "darwin", "Visual baselines are reviewed on macOS
 test.describe.configure({ mode: "serial" });
 
 let page: Page;
-const opts = () => ({ fullPage: true, maxDiffPixelRatio: 0.01, mask: [page.locator("[data-dynamic]"), page.locator("time")], animations: "disabled" as const });
+const opts = () => ({
+  fullPage: true,
+  maxDiffPixelRatio: 0.01,
+  mask: [page.locator("[data-dynamic]"), page.locator("time")],
+  animations: "disabled" as const,
+  stylePath: path.join(__dirname, "visual.css"),
+});
 
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
