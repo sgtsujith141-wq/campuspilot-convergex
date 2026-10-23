@@ -33,10 +33,14 @@ for (const [w, h] of SIZES) {
     await expect(page.getByTestId("recommendation")).toBeVisible();
     await page.evaluate(() => window.scrollTo(0, 0));
     await shot("03-decisions-evaluated");
-    await page.getByTestId("ask-panel").getByRole("button", { name: "What is my biggest attendance risk?" }).click();
+    await page.getByTestId("ask-panel").getByRole("button", { name: "Which classes clash with the hackathon, and what should I do?" }).click();
     await expect(page.getByTestId("ask-answer")).toBeVisible({ timeout: 60_000 });
-    await page.getByTestId("ask-panel").scrollIntoViewIfNeeded();
+    await page.getByTestId("ask-inspector").locator("summary").click();
+    // Start at the answer headline (the sticky top bar is 3.5rem tall).
+    await page.getByTestId("ask-answer").evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 72));
     await shot("03b-local-ai-answer", false);
+    await page.getByTestId("timetable").scrollIntoViewIfNeeded();
+    await shot("03c-timetable", false);
     await page.getByTestId("approve").click();
     await expect(page.getByTestId("approved-note")).toBeVisible();
     await page.getByTestId("source-change").click();
@@ -57,6 +61,21 @@ for (const [w, h] of SIZES) {
     await page.getByTestId("run-probe").click();
     await expect(page.getByTestId("probe-results")).toHaveAttribute("data-state", "done");
     await shot("08-security");
+    if (w === 1440) {
+      // Presentation mode (P): sidebar hidden, top-bar navigation.
+      await page.goto("/decisions");
+      await page.keyboard.press("p");
+      await expect(page.getByTestId("pitch-nav")).toBeVisible();
+      await shot("09-presentation-mode", false);
+      await page.keyboard.press("p");
+      // Frames from the 30-second intro (/overview?intro=1), timed from page load.
+      await page.goto("/overview?intro=1");
+      const t0 = Date.now();
+      for (const [at, name] of [[10.5, "10-intro-records"], [19.4, "11-intro-conflict"], [25.4, "12-intro-pipeline"], [29.0, "13-intro-brand"]] as const) {
+        await page.waitForTimeout(Math.max(0, at * 1000 - (Date.now() - t0)));
+        await page.screenshot({ path: `${dir}/${name}.png` });
+      }
+    }
     await page.close();
   });
 }
