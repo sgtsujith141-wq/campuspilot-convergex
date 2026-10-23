@@ -21,6 +21,7 @@ test("the real local model routes different questions to different investigation
   }
   expect(new Set(seen.map((s) => s.intent)).size).toBe(3);
   expect(new Set(seen.map((s) => s.tools)).size).toBe(3);
+  await page.getByTestId("ask-inspector").locator("summary").click();
   await page.getByTestId("ask-trace").click();
   await expect(page.getByTestId("run-mode")).toContainText("Local model");
   await expect(page.getByTestId("run-detail")).toContainText("Local model interpreted the question");
