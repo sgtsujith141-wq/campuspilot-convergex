@@ -6,6 +6,7 @@ export type DraftView = Pick<TaskDraft, "taskKey" | "title" | "detail" | "dueAt"
 export type MissionView = {
   id: string;
   goal: string;
+  missionType: "event_participation";
   opportunityId: string;
   revision: number;
   status: "needs_approval" | "approved";
@@ -82,7 +83,10 @@ export type WorkspaceSnapshot = {
   courses: { id: string; code: string; name: string; attended: number; total: number; futureScheduled: number; currentPercent: number | null; version: number }[];
   assignment: { id: string; name: string; dueAt: string; version: number; originalDueAt: string; demoDueAt: string; updatedAt: string };
   assessment: { id: string; name: string; startsAt: string; studyHoursDesired: number };
-  opportunity: { id: string; name: string; start: string; end: string; registrationDeadline: string; eligibility: string; approval: string; fictional: boolean };
+  opportunity: OpportunityView;
+  /** Curated catalogue the guided mission can be run against. */
+  opportunities: OpportunityView[];
+  session: { kind: "sample_login"; expiresAt: string | null };
   policy: { threshold: number; isOfficial: boolean; appliesTo: string; notes: string } | null;
   mission: MissionView | null;
   tasks: TaskView[];
@@ -91,6 +95,18 @@ export type WorkspaceSnapshot = {
   audit: { at: string; action: string; target: string | null; outcome: string }[];
   demoMode: boolean;
   agent: { mode: TraceMode; label: string; liveModel: null; tools: { name: string; role: string; description: string }[] };
+};
+
+export type OpportunityView = {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+  registrationDeadline: string;
+  eligibility: string;
+  approval: string;
+  fictional: boolean;
+  verification: string;
 };
 
 export type ApiErrorBody = { error: string; message: string };

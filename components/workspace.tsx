@@ -116,7 +116,7 @@ export function WorkspaceProvider({ initial, children }: { initial: WorkspaceSna
 
   const evaluate = useCallback(
     () =>
-      mutate<{ created: boolean; mission: { revision: number } }>("evaluate", "/api/mission/evaluate", { goal: MISSION_GOAL, opportunityId: ws.opportunity.id }, (d) => {
+      mutate<{ created: boolean; mission: { revision: number } }>("evaluate", "/api/mission/evaluate", { missionType: "event_participation", opportunityId: ws.opportunity.id }, (d) => {
         setChosen(null);
         toast(d.created ? `Evidence gathered and options computed · revision ${d.mission.revision} saved` : "Mission already exists — showing the saved plan", "success");
       }),

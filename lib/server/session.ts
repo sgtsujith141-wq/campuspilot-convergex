@@ -15,6 +15,7 @@ const hash = (token: string) => createHash("sha256").update(token).digest("hex")
 export function issueSampleSession(db: Db) {
   const student = one<{ id: string; display_name: string }>(db, "SELECT id, display_name FROM students WHERE login_enabled = 1 ORDER BY id LIMIT 1");
   if (!student) throw new Error("No sample profile available");
+  run(db, "DELETE FROM sessions WHERE expires_at < ?", nowIso());
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 3600 * 1000).toISOString();
   run(db, "INSERT INTO sessions (token_hash, student_id, created_at, expires_at) VALUES (?, ?, ?, ?)", hash(token), student.id, nowIso(), expiresAt);
@@ -30,11 +31,15 @@ export function createSessionForTest(db: Db, studentId: string) {
   return token;
 }
 
-export function resolveSession(db: Db, token: string | undefined | null): string | null {
+export function resolveSessionInfo(db: Db, token: string | undefined | null): { studentId: string; expiresAt: string } | null {
   if (!token || token.length > 128) return null;
   const row = one<{ student_id: string; expires_at: string }>(db, "SELECT student_id, expires_at FROM sessions WHERE token_hash = ?", hash(token));
   if (!row || Date.parse(row.expires_at) < Date.now()) return null;
-  return row.student_id;
+  return { studentId: row.student_id, expiresAt: row.expires_at };
+}
+
+export function resolveSession(db: Db, token: string | undefined | null): string | null {
+  return resolveSessionInfo(db, token)?.studentId ?? null;
 }
 
 export function endSession(db: Db, token: string | undefined | null) {

@@ -14,7 +14,7 @@ export type WorkflowInput = {
   opportunityId: string;
   kind: "evaluate" | "replan" | "recalculate";
   /** Present for replans: what triggered the run. */
-  trigger?: { sourceId: string; oldVersion: number; newVersion: number };
+  trigger?: { sourceId: string; oldVersion: number; newVersion: number; missionRevision?: number };
 };
 
 export type WorkflowOutput = {
@@ -58,10 +58,11 @@ export function runMissionWorkflow(input: WorkflowInput): WorkflowOutput {
   };
 
   if (input.kind === "replan" && input.trigger) {
+    note(ctx, "Source watcher", `SOURCE_UPDATED: ${input.trigger.sourceId} changed from v${input.trigger.oldVersion} to v${input.trigger.newVersion}.`, [input.trigger.sourceId]);
     note(
       ctx,
       "Source watcher",
-      `SOURCE_UPDATED ${input.trigger.sourceId} v${input.trigger.oldVersion}→v${input.trigger.newVersion} matched a dependency of this mission. Re-gathering evidence without a new student prompt.`,
+      `This mission${input.trigger.missionRevision ? ` (revision ${input.trigger.missionRevision})` : ""} was computed from v${input.trigger.oldVersion}, so it is re-evaluated now — no new student prompt.`,
       [input.trigger.sourceId],
     );
   } else {

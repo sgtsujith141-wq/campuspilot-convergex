@@ -125,7 +125,7 @@ export function audit(db: Db, studentId: string | null, action: string, target: 
     newId("aud"),
     studentId,
     action,
-    target,
+    target === null ? null : target.slice(0, 64),
     outcome,
     nowIso(),
     detail === undefined ? null : JSON.stringify(detail),

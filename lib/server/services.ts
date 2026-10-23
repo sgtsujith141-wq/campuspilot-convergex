@@ -144,32 +144,65 @@ function commitNewRevision(db: Db, studentId: string, mission: MissionRow, wf: W
   const before = JSON.parse(prev.result_json) as PlanResult;
   const toRevision = mission.revision + 1;
   const diff = diffPlans(before, wf.result, mission.revision, toRevision);
+  const startedAt = new Date().toISOString();
+  const invalidated = Number(
+    run(
+      db,
+      "UPDATE approvals SET status = 'invalidated', invalidated_at = ?, invalidated_reason = ? WHERE mission_id = ? AND student_id = ? AND status = 'active'",
+      nowIso(),
+      reason,
+      mission.id,
+      studentId,
+    ).changes,
+  );
+  const flagged = Number(
+    run(db, "UPDATE tasks SET status = 'needs_review', updated_at = ? WHERE mission_id = ? AND student_id = ? AND status = 'active'", nowIso(), mission.id, studentId).changes,
+  );
+  // Record what the approval gateway actually did, as part of this run's trace.
+  const gatewayEvent = {
+    seq: 0,
+    actor: "Approval gateway",
+    tool: null,
+    startedAt,
+    completedAt: new Date().toISOString(),
+    durationMs: 0,
+    status: "succeeded" as const,
+    mode: wf.mode,
+    summary:
+      invalidated > 0
+        ? `Invalidated ${invalidated} approval${invalidated === 1 ? "" : "s"} for revision ${mission.revision} and flagged ${flagged} saved task${flagged === 1 ? "" : "s"} for review.`
+        : `No active approval to invalidate for revision ${mission.revision}.`,
+    args: null,
+    evidenceRefs: [],
+  };
+  const trace = [...wf.trace.slice(0, -1), gatewayEvent, wf.trace[wf.trace.length - 1]].map((e, i) => ({ ...e, seq: i + 1 }));
   run(db, "UPDATE missions SET revision = ?, status = 'needs_approval', updated_at = ? WHERE id = ? AND student_id = ?", toRevision, nowIso(), mission.id, studentId);
-  persistRevision(db, studentId, mission.id, toRevision, trigger, triggerEventId, wf, diff, trigger === "source_update" ? "replan" : "recalculate", `Revision ${mission.revision} → ${toRevision}: ${reason}`);
+  persistRevision(db, studentId, mission.id, toRevision, trigger, triggerEventId, { ...wf, trace }, diff, trigger === "source_update" ? "replan" : "recalculate", `Revision ${mission.revision} → ${toRevision}: ${reason}`);
   run(db, "UPDATE action_drafts SET status = 'superseded' WHERE mission_id = ? AND revision < ? AND status = 'draft'", mission.id, toRevision);
-  const invalidated = run(
-    db,
-    "UPDATE approvals SET status = 'invalidated', invalidated_at = ?, invalidated_reason = ? WHERE mission_id = ? AND student_id = ? AND status = 'active'",
-    nowIso(),
-    reason,
-    mission.id,
-    studentId,
-  ).changes;
-  run(db, "UPDATE tasks SET status = 'needs_review', updated_at = ? WHERE mission_id = ? AND student_id = ? AND status = 'active'", nowIso(), mission.id, studentId);
-  return { missionId: mission.id, fromRevision: mission.revision, toRevision, changed: true, diff, invalidatedApprovals: Number(invalidated) };
+  return { missionId: mission.id, fromRevision: mission.revision, toRevision, changed: true, diff, invalidatedApprovals: invalidated, flaggedTasks: flagged };
 }
 
 // ── Mission evaluation ────────────────────────────────────────────────────────
 
+// Guided workflow: the only supported mission type is event participation. There is no free-text
+// goal field because nothing would interpret it; the stored goal is generated from the mission
+// type and the catalogue entry.
+export const MISSION_TYPES = ["event_participation"] as const;
 export const EvaluateSchema = z
   .object({
-    goal: z.string().trim().min(3).max(500),
+    missionType: z.enum(MISSION_TYPES),
     opportunityId: z.string().regex(/^opp_[a-z0-9_]{1,40}$/),
   })
   .strict();
 
+export function missionGoal(opportunityName: string) {
+  return `Can I attend ${opportunityName}? Check attendance, assignments and assessments, and prepare a realistic plan.`;
+}
+
 export function evaluateMission(db: Db, studentId: string, input: z.infer<typeof EvaluateSchema>, fixedMissionId?: string) {
-  if (!getSharedSource(db, "opportunity", input.opportunityId)) throw new ApiError(404, "UNKNOWN_OPPORTUNITY", "Opportunity is not in the catalogue");
+  const opportunity = getSharedSource(db, "opportunity", input.opportunityId);
+  if (!opportunity) throw new ApiError(404, "UNKNOWN_OPPORTUNITY", "Opportunity is not in the catalogue");
+  const goal = missionGoal(JSON.parse(opportunity.payload_json).name);
   const findExisting = () => one<MissionRow>(db, "SELECT * FROM missions WHERE student_id = ? AND opportunity_id = ?", studentId, input.opportunityId);
   const existing = findExisting();
   if (existing) return { missionId: existing.id, created: false };
@@ -181,10 +214,11 @@ export function evaluateMission(db: Db, studentId: string, input: z.infer<typeof
     const at = nowIso();
     run(
       db,
-      "INSERT INTO missions (id, student_id, goal, opportunity_id, revision, status, created_at, updated_at) VALUES (?, ?, ?, ?, 1, 'needs_approval', ?, ?)",
+      "INSERT INTO missions (id, student_id, goal, mission_type, opportunity_id, revision, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, 'needs_approval', ?, ?)",
       missionId,
       studentId,
-      input.goal,
+      goal,
+      input.missionType,
       input.opportunityId,
       at,
       at,
@@ -233,13 +267,8 @@ export function approveMission(db: Db, studentId: string, missionId: string, bod
     const mission = getOwnMission(db, studentId, missionId);
     if (!mission) throw new ApiError(403, "FORBIDDEN", "Resource is not accessible to this session");
 
-    const prior = one<ApprovalRow>(db, "SELECT * FROM approvals WHERE student_id = ? AND idempotency_key = ?", studentId, body.idempotencyKey);
-    if (prior) {
-      if (prior.mission_id === missionId && prior.revision === body.revision && prior.option_id === body.optionId) {
-        return { approvalId: prior.id, replayed: true, tasks: listOwnTasks(db, studentId) };
-      }
-      throw new ApiError(409, "IDEMPOTENCY_KEY_REUSED", "This idempotency key was already used for a different approval");
-    }
+    // Order matters: a request for an outdated revision is refused before any idempotency
+    // replay, so a retried old approval can never be reported as active again.
     if (body.revision !== mission.revision) {
       throw new ApiError(409, "STALE_REVISION", `Plan revision ${body.revision} is outdated; current revision is ${mission.revision}. Review the revised plan before approving.`);
     }
@@ -247,6 +276,26 @@ export function approveMission(db: Db, studentId: string, missionId: string, bod
     if (!sameSecret(body.challenge, revision.challenge)) {
       throw new ApiError(403, "CONSENT_REQUIRED", "Approval must come from the student's review of this exact plan revision");
     }
+
+    const prior = one<ApprovalRow>(db, "SELECT * FROM approvals WHERE student_id = ? AND idempotency_key = ?", studentId, body.idempotencyKey);
+    if (prior) {
+      const sameRequest =
+        prior.mission_id === missionId &&
+        prior.revision === body.revision &&
+        prior.option_id === body.optionId &&
+        JSON.stringify([...JSON.parse(prior.action_ids_json)].sort()) === JSON.stringify([...body.actionIds].sort());
+      if (!sameRequest) throw new ApiError(409, "IDEMPOTENCY_KEY_REUSED", "This idempotency key was already used for a different approval");
+      // An exact retry of a still-active approval is a no-op; a superseded one is never reinstated.
+      if (prior.status !== "active") throw new ApiError(409, "APPROVAL_SUPERSEDED", "That approval was superseded and cannot be reinstated. Approve the current plan instead.");
+      return { approvalId: prior.id, replayed: true, tasks: listOwnTasks(db, studentId) };
+    }
+
+    const result = JSON.parse(revision.result_json) as PlanResult;
+    const option = result.options.find((o) => o.id === body.optionId);
+    if (!option || option.hardViolations.length > 0) {
+      throw new ApiError(422, "OPTION_NOT_FEASIBLE", option ? option.hardViolations[0] : "Unknown option");
+    }
+
     const drafts = all<DraftRow>(
       db,
       "SELECT * FROM action_drafts WHERE mission_id = ? AND student_id = ? AND revision = ? AND option_id = ?",
@@ -354,7 +403,7 @@ function onSourceUpdated(db: Db, evt: SourceUpdated) {
       studentId: mission.student_id,
       opportunityId: mission.opportunity_id,
       kind: "replan",
-      trigger: { sourceId: evt.sourceId, oldVersion: evt.oldVersion, newVersion: evt.newVersion },
+      trigger: { sourceId: evt.sourceId, oldVersion: evt.oldVersion, newVersion: evt.newVersion, missionRevision: mission.revision },
     });
     const current = JSON.parse(getRevision(db, mission.id, mission.revision)!.result_json) as PlanResult;
     const reason = `SOURCE_UPDATED ${evt.sourceId} v${evt.oldVersion}→v${evt.newVersion}`;

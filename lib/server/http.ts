@@ -17,8 +17,15 @@ function toResponse(err: unknown) {
   return json({ error: "INTERNAL", message: "Unexpected server error" }, 500);
 }
 
+const MAX_BODY_BYTES = 16 * 1024;
+/** Resource IDs are short slugs; anything else is refused before touching the database. */
+export const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
 /** Mutations must be same-origin JSON requests (CSRF defence on top of SameSite=Strict). */
 function assertSameOriginJson(req: NextRequest) {
+  if (req.headers.get("sec-fetch-site") === "cross-site") throw new ApiError(403, "CROSS_ORIGIN", "Cross-origin request rejected");
+  const length = Number(req.headers.get("content-length") ?? "0");
+  if (length > MAX_BODY_BYTES) throw new ApiError(413, "PAYLOAD_TOO_LARGE", "Request body is too large");
   const origin = req.headers.get("origin");
   if (origin) {
     const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
@@ -65,8 +72,8 @@ export async function handle(fn: () => Response | Promise<Response>, req?: NextR
   }
 }
 
-/** Uniform 403 for foreign *and* nonexistent IDs, so responses do not reveal what exists. */
+/** Uniform 403 for foreign, nonexistent *and* malformed IDs, so responses do not reveal what exists. */
 export function forbidden(db: Db, studentId: string, action: string, target: string) {
-  audit(db, studentId, action, target, "denied:403:FORBIDDEN");
+  audit(db, studentId, action, SAFE_ID.test(target) ? target : "(malformed id)", "denied:403:FORBIDDEN");
   return json({ error: "FORBIDDEN", message: "Resource is not accessible to this session" }, 403);
 }
