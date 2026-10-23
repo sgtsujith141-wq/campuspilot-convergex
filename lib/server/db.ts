@@ -124,12 +124,15 @@ export function tx<T>(db: Db, fn: () => T): T {
   }
 }
 
+// node:sqlite returns null-prototype rows; copy them into plain objects so they can cross the
+// server → client component boundary and behave like ordinary objects everywhere else.
 export function one<T = Row>(db: Db, sql: string, ...params: (string | number | null)[]): T | undefined {
-  return db.prepare(sql).get(...params) as T | undefined;
+  const row = db.prepare(sql).get(...params);
+  return row ? ({ ...row } as T) : undefined;
 }
 
 export function all<T = Row>(db: Db, sql: string, ...params: (string | number | null)[]): T[] {
-  return db.prepare(sql).all(...params) as T[];
+  return db.prepare(sql).all(...params).map((r) => ({ ...r }) as T);
 }
 
 export function run(db: Db, sql: string, ...params: (string | number | null)[]) {

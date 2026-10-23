@@ -73,3 +73,17 @@ export function formatBlock(block: { start: string; end: string }): string {
 export function overlaps(a: { start: number; end: number }, b: { start: number; end: number }) {
   return a.start < b.end && b.start < a.end;
 }
+
+/** "5:42:13 AM" in IST — used for real event timestamps (audit, traces, approvals). */
+export function formatIstClock(iso: string): string {
+  const p = istParts(toMs(iso));
+  const d = new Date(toMs(iso) + IST_OFFSET_MS);
+  const h12 = p.hour % 12 === 0 ? 12 : p.hour % 12;
+  return `${h12}:${String(p.minute).padStart(2, "0")}:${String(d.getUTCSeconds()).padStart(2, "0")} ${p.hour < 12 ? "AM" : "PM"}`;
+}
+
+/** "23 Oct, 5:42 AM" — real timestamps with a date. */
+export function formatIstStamp(iso: string): string {
+  const p = istParts(toMs(iso));
+  return `${p.day} ${MONTHS[p.month - 1]}, ${clock(p.hour, p.minute)}`;
+}

@@ -90,7 +90,7 @@ export type WorkspaceSnapshot = {
   notifications: { id: string; at: string; title: string; detail: string }[];
   audit: { at: string; action: string; target: string | null; outcome: string }[];
   demoMode: boolean;
-  agent: { mode: TraceMode; label: string; liveModel: null };
+  agent: { mode: TraceMode; label: string; liveModel: null; tools: { name: string; role: string; description: string }[] };
 };
 
 export type ApiErrorBody = { error: string; message: string };

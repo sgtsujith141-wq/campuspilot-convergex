@@ -6,6 +6,7 @@ import type { DraftView, MissionView, RunView, TaskView, TraceEventView, Workspa
 import { all, one, type Db } from "./db";
 import { getRevision, latestOwnMission, listOwnSources, listOwnTasks, type ApprovalRow, type DraftRow, type MissionRow, type RevisionRow, type SourceRow, type TaskRow } from "./repo";
 import { isDemoMode } from "./services";
+import { TOOL_CATALOG } from "@/lib/agents/tools";
 
 export function missionView(db: Db, studentId: string, mission: MissionRow): MissionView {
   const rev = getRevision(db, mission.id, mission.revision)!;
@@ -102,8 +103,8 @@ export function listRuns(db: Db, studentId: string, limit = 8): RunView[] {
 
 export function workspaceSnapshot(db: Db, studentId: string): WorkspaceSnapshot {
   const student = one<{ display_name: string; campus: string; fictional: number; profile_json: string }>(db, "SELECT * FROM students WHERE id = ?", studentId)!;
-  const own = all<SourceRow>(db, "SELECT * FROM source_records WHERE owner_id = ? ORDER BY record_type, id", studentId);
-  const shared = all<SourceRow>(db, "SELECT * FROM source_records WHERE owner_id IS NULL ORDER BY record_type, id");
+  const own = all<SourceRow>(db, "SELECT * FROM source_records WHERE owner_id = ? ORDER BY rowid", studentId);
+  const shared = all<SourceRow>(db, "SELECT * FROM source_records WHERE owner_id IS NULL ORDER BY rowid");
   const courses = listOwnSources(db, studentId, "course").map((r) => {
     const p = JSON.parse(r.payload_json);
     const cur = currentAttendance(p.attended, p.total);
@@ -163,6 +164,6 @@ export function workspaceSnapshot(db: Db, studentId: string): WorkspaceSnapshot 
       studentId,
     ),
     demoMode: isDemoMode(),
-    agent: { mode: "deterministic", label: "Offline guided workflow", liveModel: null },
+    agent: { mode: "deterministic", label: "Offline guided workflow", liveModel: null, tools: TOOL_CATALOG },
   };
 }

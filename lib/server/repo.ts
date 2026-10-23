@@ -89,7 +89,7 @@ export const newSecret = () => randomBytes(18).toString("base64url");
 export const nowIso = () => new Date().toISOString();
 
 export function listOwnSources(db: Db, studentId: string, recordType: string): SourceRow[] {
-  return all<SourceRow>(db, "SELECT * FROM source_records WHERE owner_id = ? AND record_type = ? ORDER BY id", studentId, recordType);
+  return all<SourceRow>(db, "SELECT * FROM source_records WHERE owner_id = ? AND record_type = ? ORDER BY rowid", studentId, recordType);
 }
 
 export function getOwnSource(db: Db, studentId: string, id: string): SourceRow | undefined {

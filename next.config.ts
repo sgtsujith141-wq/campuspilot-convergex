@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // The floating dev indicator overlaps the sidebar account card during demos.
+  devIndicators: false,
   // A stray package-lock.json exists in a parent folder; pin the workspace root explicitly.
   outputFileTracingRoot: process.cwd(),
   turbopack: { root: process.cwd() },
