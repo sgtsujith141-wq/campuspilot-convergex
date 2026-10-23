@@ -691,6 +691,7 @@ function Rail() {
           <li>
             <span>Registration</span>
             <strong>{reg.label}</strong>
+            <em className="assume">Assumes you have not registered yet</em>
           </li>
           <li>
             <span>Assignment due</span>

@@ -305,6 +305,15 @@ describe("request hygiene", () => {
     r.headers.set("sec-fetch-site", "cross-site");
     expect((await sourceChange.POST(r)).status).toBe(403);
   });
+  it("oversized bodies without a Content-Length header are still cut off at the limit → 413", async () => {
+    const big = JSON.stringify({ event: "advance_assignment_deadline", pad: "x".repeat(40 * 1024) });
+    const r = req("/api/demo/source-change", { method: "POST", token: maya, body: big });
+    r.headers.delete("content-length");
+    expect(r.headers.get("content-length")).toBeNull();
+    const res = await sourceChange.POST(r);
+    expect(res.status).toBe(413);
+    expect((await getMission()).revision).toBe(3); // nothing changed
+  });
   it("oversized bodies → 413", async () => {
     const r = req("/api/demo/source-change", { method: "POST", token: maya, body: { event: "advance_assignment_deadline" } });
     r.headers.set("content-length", String(64 * 1024));

@@ -136,7 +136,7 @@ export function findConflicts(facts: PlanningFacts): Conflict[] {
     severity: reg.status === "closed" ? "hard" : reg.status === "closing_soon" ? "soft" : "info",
     message:
       reg.status === "closed"
-        ? `Registration closed ${when} according to the event listing. Participation is not possible unless the organisers confirm late entry.`
+        ? `Registration closed ${when} according to the event listing. This assumes you have not registered yet; if you already registered, check your status with the organisers.`
         : reg.status === "closing_soon"
           ? `Registration closes ${when} — in ${reg.hoursRemaining} hours. Eligibility and on-duty approval must be confirmed before then.`
           : reg.status === "open"
@@ -323,7 +323,7 @@ export function enumerateOptions(facts: PlanningFacts): DecisionOption[] {
       else flags.push(`${msg} of the sample policy (not an official rule).`);
     }
     if (copy.participates && registration.status === "closed") {
-      hardViolations.push(`Registration closed ${formatIst(registration.deadline!)} according to the event listing.`);
+      hardViolations.push(`Registration closed ${formatIst(registration.deadline!)} according to the event listing (assumes you have not registered yet).`);
     } else if (copy.participates && registration.status === "closing_soon") {
       flags.push(`Registration closes in ${registration.hoursRemaining} hours.`);
     }

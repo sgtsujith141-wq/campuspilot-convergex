@@ -306,6 +306,7 @@ code, .mono { font-family: var(--mono); font-size: 0.8125rem; }
 .fact-list span { display: block; font-size: 0.75rem; color: var(--text-3); }
 .fact-list strong { display: block; font-size: 0.875rem; font-weight: 550; }
 .fact-list em { font-style: normal; font-size: 0.75rem; color: var(--warn); font-weight: 550; }
+.fact-list em.assume { color: var(--text-3); font-weight: 400; }
 
 .demo-box { border: 1px dashed var(--warn-line); background: #fffcf4; border-radius: var(--radius-lg); padding: 1rem; }
 .demo-box .label { display: flex; align-items: center; gap: 0.375rem; font-size: 0.75rem; font-weight: 650; color: var(--warn); margin-bottom: 0.375rem; }

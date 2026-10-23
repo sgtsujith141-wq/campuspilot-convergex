@@ -133,7 +133,7 @@ describe("registration status (scenario clock)", () => {
     f.opportunity.registrationDeadline = f.now;
     const r = evaluatePlan(f);
     expect(r.recommendation.optionId).toBe("defer");
-    expect(opt(r, "partial").hardViolations[0]).toMatch(/Registration closed/);
+    expect(opt(r, "partial").hardViolations[0]).toMatch(/Registration closed .* \(assumes you have not registered yet\)/);
     expect(opt(r, "partial").tasks.map((t) => t.taskKey)).not.toContain("verify_participation");
     expect(r.conflicts.find((c) => c.kind === "REGISTRATION_WINDOW")!.severity).toBe("hard");
   });

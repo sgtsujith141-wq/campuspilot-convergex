@@ -36,10 +36,33 @@ function assertSameOriginJson(req: NextRequest) {
   }
 }
 
+/**
+ * Read at most MAX_BODY_BYTES from the actual stream. The Content-Length check above is only a
+ * fast path: a request can omit the header (chunked) and still send more.
+ */
+async function readLimitedText(req: NextRequest, limit = MAX_BODY_BYTES): Promise<string> {
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > limit) {
+      await reader.cancel().catch(() => undefined);
+      throw new ApiError(413, "PAYLOAD_TOO_LARGE", "Request body is too large");
+    }
+    chunks.push(value);
+  }
+  return new TextDecoder().decode(Buffer.concat(chunks));
+}
+
 export async function readBody<S extends z.ZodType>(req: NextRequest, schema: S): Promise<z.infer<S>> {
+  const text = await readLimitedText(req);
   let raw: unknown;
   try {
-    raw = await req.json();
+    raw = JSON.parse(text);
   } catch {
     throw new ApiError(400, "INVALID_JSON", "Body must be JSON");
   }
