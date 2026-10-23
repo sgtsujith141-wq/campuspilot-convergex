@@ -19,6 +19,8 @@ export default defineConfig({
     url: `http://localhost:${PORT}/overview`,
     timeout: 240_000,
     reuseExistingServer: false,
-    env: { CAMPUSPILOT_DB_PATH: E2E_DB, CAMPUSPILOT_DEMO_MODE: "on" },
+    // The regular suite runs with the local model switched off (CI has none); AI_LIVE=1 enables
+    // it for e2e/ai-live.spec.ts on a machine with Ollama.
+    env: { CAMPUSPILOT_DB_PATH: E2E_DB, CAMPUSPILOT_DEMO_MODE: "on", CAMPUSPILOT_LLM: process.env.AI_LIVE === "1" ? "on" : "off" },
   },
 });

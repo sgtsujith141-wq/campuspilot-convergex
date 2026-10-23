@@ -18,6 +18,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}/overview`,
     timeout: 240_000,
     reuseExistingServer: false,
-    env: { CAMPUSPILOT_DB_PATH: DB, CAMPUSPILOT_DEMO_MODE: "on" },
+    // Uses the real local model when one is running (answers are labelled either way).
+    env: { CAMPUSPILOT_DB_PATH: DB, CAMPUSPILOT_DEMO_MODE: "on", CAMPUSPILOT_LLM: "on" },
   },
 });

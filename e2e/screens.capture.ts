@@ -33,6 +33,10 @@ for (const [w, h] of SIZES) {
     await expect(page.getByTestId("recommendation")).toBeVisible();
     await page.evaluate(() => window.scrollTo(0, 0));
     await shot("03-decisions-evaluated");
+    await page.getByTestId("ask-panel").getByRole("button", { name: "What is my biggest attendance risk?" }).click();
+    await expect(page.getByTestId("ask-answer")).toBeVisible({ timeout: 60_000 });
+    await page.getByTestId("ask-panel").scrollIntoViewIfNeeded();
+    await shot("03b-local-ai-answer", false);
     await page.getByTestId("approve").click();
     await expect(page.getByTestId("approved-note")).toBeVisible();
     await page.getByTestId("source-change").click();
@@ -45,6 +49,9 @@ for (const [w, h] of SIZES) {
     await page.goto("/overview");
     await shot("06-home-needs-review");
     await page.goto("/agents");
+    await page.locator(".run-btn", { hasText: "Asked:" }).first().click();
+    await shot("07a-activity-local-ai");
+    await page.locator(".run-btn", { hasText: "Re-planned" }).first().click();
     await shot("07-activity");
     await page.goto("/trust");
     await page.getByTestId("run-probe").click();
