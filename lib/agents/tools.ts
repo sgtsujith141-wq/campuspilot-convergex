@@ -12,7 +12,8 @@ import type {
 } from "@/lib/contracts";
 import { evaluatePlan, findConflicts, projectCourses } from "@/lib/core/planner";
 import { formatPercent } from "@/lib/core/attendance";
-import { formatIst } from "@/lib/core/time";
+import { formatDateRange, formatIst } from "@/lib/core/time";
+import type { ClassSession } from "@/lib/core/timetable";
 import type { Db } from "@/lib/server/db";
 import { getSharedSource, listOwnSources, type SourceRow } from "@/lib/server/repo";
 
@@ -50,6 +51,7 @@ export type RunMemory = {
   policy?: PolicyFacts | null;
   opportunity?: OpportunityFacts;
   eventRules?: { eligibility: "unknown" | "eligible" | "ineligible"; verification: string; reason: string };
+  timetable?: { sessions: ClassSession[]; partialWindow: { start: string; end: string }; ref: EvidenceRef };
 };
 
 export type ToolContext = {
@@ -153,6 +155,27 @@ const TOOLS = [
         summary: `${ap.name} due ${formatIst(ap.dueAt)} IST (record v${a.version}); ${sp.name} at ${formatIst(sp.startsAt)} IST.`,
         evidenceRefs: [a.id, s.id],
         result: { assignmentDueAt: ap.dueAt, assessmentStartsAt: sp.startsAt },
+      };
+    },
+  } satisfies ToolDef<typeof noArgs>,
+  {
+    name: "get_my_timetable",
+    role: "academic",
+    description: "Class timetable (lectures and labs with times and rooms) for the signed-in student.",
+    args: noArgs,
+    run: (ctx) => {
+      const row = listOwnSources(ctx.db, ctx.studentId, "timetable")[0];
+      if (!row) {
+        return { summary: "No timetable source is available for this student.", evidenceRefs: [], result: { sessions: 0 } };
+      }
+      const p = JSON.parse(row.payload_json);
+      ctx.memory.timetable = { sessions: p.sessions, partialWindow: p.plannedPartialWindow, ref: ref(row) };
+      const first = p.sessions[0]?.start;
+      const last = p.sessions[p.sessions.length - 1]?.end;
+      return {
+        summary: `Read ${p.sessions.length} synthetic class sessions${first && last ? ` (${formatDateRange(first, last)})` : ""} from ${row.label}, v${row.version}.`,
+        evidenceRefs: [row.id],
+        result: { sessions: p.sessions.length },
       };
     },
   } satisfies ToolDef<typeof noArgs>,

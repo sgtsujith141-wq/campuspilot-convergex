@@ -22,7 +22,7 @@ const HOUR = 3600 * 1000;
 /** Suggested work blocks are evening slots; they are proposals, not timetable facts. */
 const BLOCK_START_HOUR = 18;
 /** Finish project work this many hours before the effective cutoff. */
-const PROJECT_BUFFER_HOURS = 12;
+export const PROJECT_BUFFER_HOURS = 12;
 /** Registration is "closing soon" inside this window. */
 export const CLOSING_SOON_HOURS = 48;
 /** Evidence older than this (relative to the scenario clock) is flagged as stale. */
@@ -214,7 +214,7 @@ function unknownConditionsFor(facts: PlanningFacts, participates: boolean, stale
     id: "timetable",
     label: "Class timetable",
     status: "NEEDS_VERIFICATION",
-    reason: "No timetable source is connected. Absence counts are estimates from the scenario data, and suggested work blocks are not checked against your classes.",
+    reason: "The class timetable is a synthetic sample, not VTOP. Absence counts match it, but class times and suggested work blocks are not institutionally verified.",
   });
   if (stale.length > 0) {
     out.push({

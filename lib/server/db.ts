@@ -2,7 +2,7 @@ import "server-only";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { seedDatabase } from "./seed";
+import { seedDatabase, seedMissingSources } from "./seed";
 
 export type Db = DatabaseSync;
 export type Row = Record<string, unknown>;
@@ -93,6 +93,8 @@ export function openDatabase(file: string): Db {
       seedDatabase(db);
       db.prepare("INSERT INTO meta (key, value) VALUES ('seeded', ?)").run(new Date().toISOString());
     });
+  } else {
+    tx(db, () => seedMissingSources(db)); // e.g. the timetable record added after v3
   }
   return db;
 }
