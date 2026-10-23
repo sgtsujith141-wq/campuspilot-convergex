@@ -64,7 +64,7 @@ describe("derived home state", () => {
 });
 
 describe("activity step labels", () => {
-  const base = { seq: 1, startedAt: "2026-10-23T00:00:00Z", completedAt: null, durationMs: 0, status: "succeeded", mode: "deterministic" as const, evidenceRefs: [], error: null };
+  const base = { seq: 1, startedAt: "2026-10-23T00:00:00Z", completedAt: null, durationMs: 0, status: "succeeded", mode: "deterministic" as const, evidenceRefs: [], error: null, requestedBy: null };
   it("maps recorded tools and checkpoints to readable labels", () => {
     expect(stepLabel({ ...base, actor: "Academic specialist", tool: "get_my_courses", summary: "", args: {} })).toBe("Read course records");
     expect(stepLabel({ ...base, actor: "Constraint evaluator", tool: "calculate_attendance", summary: "", args: { optionId: "full" } })).toBe("Calculated attendance · Attend full event");

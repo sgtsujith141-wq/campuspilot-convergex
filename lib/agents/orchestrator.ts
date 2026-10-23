@@ -19,7 +19,7 @@ export type WorkflowInput = {
 
 export type WorkflowOutput = {
   mode: TraceMode;
-  model: null;
+  model: string | null;
   startedAt: string;
   completedAt: string;
   result: PlanResult;

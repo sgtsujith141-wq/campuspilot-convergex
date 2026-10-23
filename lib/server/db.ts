@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS trace_runs (
 CREATE TABLE IF NOT EXISTS trace_events (
   id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES trace_runs(id), student_id TEXT NOT NULL, seq INTEGER NOT NULL,
   actor TEXT NOT NULL, tool TEXT, started_at TEXT NOT NULL, completed_at TEXT, duration_ms REAL, status TEXT NOT NULL,
-  mode TEXT NOT NULL, summary TEXT NOT NULL, args_json TEXT, evidence_refs_json TEXT NOT NULL, error TEXT
+  mode TEXT NOT NULL, summary TEXT NOT NULL, args_json TEXT, evidence_refs_json TEXT NOT NULL, error TEXT, requested_by TEXT
 );
 CREATE TABLE IF NOT EXISTS audit_log (
   id TEXT PRIMARY KEY, student_id TEXT, action TEXT NOT NULL, target TEXT, outcome TEXT NOT NULL,
@@ -97,7 +97,7 @@ export function openDatabase(file: string): Db {
   return db;
 }
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * v2: missions carry a mission_type (guided workflow), and plan results gained registration
@@ -105,14 +105,18 @@ export const SCHEMA_VERSION = 2;
  * cannot be shown faithfully by the new UI, so they are cleared; source records, sessions and
  * the audit log are kept. Students simply evaluate again.
  */
+/** v3 (additive, no data loss): trace_events.requested_by records who asked for a tool call. */
 function migrate(db: Db) {
   const row = db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as { value: string } | undefined;
   const version = row ? Number(row.value) : 1;
   if (version >= SCHEMA_VERSION) return;
-  const cols = (db.prepare("PRAGMA table_info(missions)").all() as { name: string }[]).map((c) => c.name);
+  const colsOf = (table: string) => (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name);
   tx(db, () => {
-    if (!cols.includes("mission_type")) db.exec("ALTER TABLE missions ADD COLUMN mission_type TEXT NOT NULL DEFAULT 'event_participation'");
-    for (const t of ["trace_events", "trace_runs", "tasks", "approvals", "action_drafts", "plan_dependencies", "mission_revisions", "missions"]) db.exec(`DELETE FROM ${t}`);
+    if (version < 2) {
+      if (!colsOf("missions").includes("mission_type")) db.exec("ALTER TABLE missions ADD COLUMN mission_type TEXT NOT NULL DEFAULT 'event_participation'");
+      for (const t of ["trace_events", "trace_runs", "tasks", "approvals", "action_drafts", "plan_dependencies", "mission_revisions", "missions"]) db.exec(`DELETE FROM ${t}`);
+    }
+    if (!colsOf("trace_events").includes("requested_by")) db.exec("ALTER TABLE trace_events ADD COLUMN requested_by TEXT");
     db.prepare("INSERT INTO meta (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(String(SCHEMA_VERSION));
   });
 }

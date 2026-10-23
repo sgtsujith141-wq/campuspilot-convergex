@@ -193,7 +193,14 @@ export function stepLabel(e: TraceEventView): string {
   if (e.actor === "Approval gateway") return e.summary.startsWith("Invalidated") ? "Invalidated the outdated approval" : "Checked existing approvals";
   if (e.actor === "Permission checkpoint") return "Requested your approval";
   if (e.actor === "Personal orchestrator") return "Started the guided workflow";
+  if (e.actor === "Local AI coordinator") {
+    if (e.status !== "succeeded") return e.args?.purpose === "summary" ? "Model summary not shown" : "Local model output not used";
+    return e.args?.purpose === "summary" ? "Local model wrote a summary" : "Local model interpreted the question";
+  }
+  if (e.actor === "Scope check") return e.summary.startsWith("Question refused") ? "Refused: out of scope" : "Checked the question is in scope";
+  if (e.actor === "Fallback router") return "Keyword fallback chose the route";
+  if (e.actor === "Tool gateway") return "Refused a tool request";
   return e.actor;
 }
 
-export const RUN_KIND_LABEL = { evaluate: "Evaluated the decision", replan: "Re-planned after a source change", recalculate: "Re-ran the evaluation" } as const;
+export const RUN_KIND_LABEL = { evaluate: "Evaluated the decision", replan: "Re-planned after a source change", recalculate: "Re-ran the evaluation", ask: "Answered a question" } as const;

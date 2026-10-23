@@ -209,4 +209,5 @@ export type RevisionDiff = {
   changed: boolean;
 };
 
-export type TraceMode = "live_llm" | "deterministic";
+/** "local_llm" only when a real local-model call was made during the run. */
+export type TraceMode = "local_llm" | "deterministic";

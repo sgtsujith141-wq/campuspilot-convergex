@@ -43,7 +43,16 @@ function guarded<T>(db: Db, studentId: string, action: string, target: string, f
   }
 }
 
-function persistRun(db: Db, studentId: string, missionId: string, kind: string, wf: WorkflowOutput, revision: number, summary: string) {
+/** Persist a trace run and its events. Shared by the guided workflow and the local AI agent. */
+export function persistRun(
+  db: Db,
+  studentId: string,
+  missionId: string,
+  kind: string,
+  wf: Pick<WorkflowOutput, "mode" | "model" | "startedAt" | "completedAt" | "trace">,
+  revision: number,
+  summary: string,
+) {
   const runId = newId("run");
   run(
     db,
@@ -61,8 +70,8 @@ function persistRun(db: Db, studentId: string, missionId: string, kind: string, 
     summary,
   );
   const insert = db.prepare(
-    `INSERT INTO trace_events (id, run_id, student_id, seq, actor, tool, started_at, completed_at, duration_ms, status, mode, summary, args_json, evidence_refs_json, error)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO trace_events (id, run_id, student_id, seq, actor, tool, started_at, completed_at, duration_ms, status, mode, summary, args_json, evidence_refs_json, error, requested_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
   for (const e of wf.trace) {
     insert.run(
@@ -81,6 +90,7 @@ function persistRun(db: Db, studentId: string, missionId: string, kind: string, 
       e.args ? JSON.stringify(e.args) : null,
       JSON.stringify(e.evidenceRefs),
       e.error ?? null,
+      e.requestedBy ?? (e.tool ? "workflow" : null),
     );
   }
   return runId;

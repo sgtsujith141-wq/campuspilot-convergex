@@ -50,11 +50,12 @@ export type TraceEventView = {
   args: Record<string, unknown> | null;
   evidenceRefs: string[];
   error: string | null;
+  requestedBy: "model" | "server" | "workflow" | null;
 };
 
 export type RunView = {
   id: string;
-  kind: "evaluate" | "replan" | "recalculate";
+  kind: "evaluate" | "replan" | "recalculate" | "ask";
   mode: TraceMode;
   model: string | null;
   revision: number;
@@ -110,3 +111,37 @@ export type OpportunityView = {
 };
 
 export type ApiErrorBody = { error: string; message: string };
+
+// ── Local AI ─────────────────────────────────────────────────────────────────
+
+export type AiStatusView = {
+  status: "local_model_ready" | "local_model_unavailable" | "local_model_error";
+  provider: "ollama";
+  model: string;
+  details?: { parameterSize?: string; quantization?: string; family?: string };
+  message?: string;
+  checkedAt: string;
+};
+
+export type AskToolView = { name: string; requestedBy: "model" | "server"; status: string; evidenceRefs: string[] };
+
+export type AskView = {
+  runId: string;
+  status: "answered" | "unsupported";
+  /** local_llm only when a real local-model call produced the routing decision. */
+  mode: TraceMode;
+  modelStatus: "local_model_ready" | "local_model_unavailable" | "local_model_error" | "deterministic_fallback";
+  model: string | null;
+  question: string;
+  intent: string;
+  intentLabel: string;
+  routing: { source: "model" | "fallback" | "scope_check"; modelTools: string[]; serverTools: string[]; attempts: number; modelMs: number | null; rejected: string[] };
+  tools: AskToolView[];
+  findings: string[];
+  unknowns: string[];
+  summary: { text: string; accepted: true } | { text: null; accepted: false; reason: string } | null;
+  sources: { id: string; label: string; version: number; verification: string }[];
+  notes: string[];
+  stale: boolean;
+  durationMs: number;
+};

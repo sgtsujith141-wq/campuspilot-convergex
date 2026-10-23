@@ -68,7 +68,7 @@ export function taskView(t: TaskRow): TaskView {
 }
 
 type RunRow = { id: string; kind: RunView["kind"]; mode: RunView["mode"]; model: string | null; revision: number; started_at: string; completed_at: string | null; status: string; summary: string };
-type EventRow = { seq: number; actor: string; tool: string | null; started_at: string; completed_at: string | null; duration_ms: number | null; status: string; mode: TraceEventView["mode"]; summary: string; args_json: string | null; evidence_refs_json: string; error: string | null };
+type EventRow = { seq: number; actor: string; tool: string | null; started_at: string; completed_at: string | null; duration_ms: number | null; status: string; mode: TraceEventView["mode"]; summary: string; args_json: string | null; evidence_refs_json: string; error: string | null; requested_by: TraceEventView["requestedBy"] };
 
 export function runEvents(db: Db, studentId: string, runId: string): TraceEventView[] {
   return all<EventRow>(db, "SELECT * FROM trace_events WHERE run_id = ? AND student_id = ? ORDER BY seq", runId, studentId).map((e) => ({
@@ -84,6 +84,7 @@ export function runEvents(db: Db, studentId: string, runId: string): TraceEventV
     args: e.args_json ? JSON.parse(e.args_json) : null,
     evidenceRefs: JSON.parse(e.evidence_refs_json),
     error: e.error,
+    requestedBy: e.requested_by ?? null,
   }));
 }
 

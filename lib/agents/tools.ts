@@ -37,6 +37,8 @@ export type TraceEventDraft = {
   args: Record<string, unknown> | null;
   evidenceRefs: string[];
   error?: string;
+  /** Who asked for this step: the local model, the server's own policy, or the fixed workflow. */
+  requestedBy?: "model" | "server" | "workflow";
 };
 
 /** Working memory of one run: only evidence gathered through tools, with provenance. */
