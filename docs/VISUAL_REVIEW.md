@@ -53,3 +53,14 @@ How the redesign was reviewed, what was found, and how screenshots are kept hone
   honesty over brevity.
 - Full-page screenshots show fixed elements (top bar, tab bar) mid-page — a capture artefact, not a
   layout bug.
+
+## Local AI panel (added 23 Oct, reviewed at 1440×900 and 390×844 with the real model)
+
+- One panel at the top of Decisions; no chat thread, no typing animation, no decorative AI art.
+- The status badge reads the server's real model check ("Local AI · llama3.2:1b (1.2B)" or
+  "Offline · keyword fallback"); the pending line names the model only while a request is in flight.
+- Tool chips distinguish what the model requested (indigo, "MODEL") from evidence the server added
+  ("SERVER"). Findings are full sentences with the computed numbers; unknowns in amber.
+- Fixed during review: the question input collapsed in height on phones (flex-basis in a column);
+  question runs were labelled "Requested your approval" in Activity although they request nothing
+  ("Confirmed nothing was changed" now); identical "Answered a question" rows now show the intent.

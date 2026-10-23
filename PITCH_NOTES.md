@@ -1,56 +1,61 @@
 # CampusPilot — pitch notes (ConvergeX 2026, PS2)
 
-Scope you can claim, word for word: *deterministic academic projections, server-enforced
-per-student isolation, revision-pinned approvals that create local tasks, and automatic
-replanning when a source record changes — on synthetic data. No VTOP connection and no live
-language model.*
+Scope you can claim, word for word: *a small language model running on this laptop interprets the
+student's question and chooses which of their records to investigate; deterministic code computes
+every number; server-enforced isolation, revision-pinned approvals and automatic replanning — on
+synthetic data, with no VTOP connection.*
 
 ## Before you present (5 minutes)
 
-1. `npm run demo`, open http://localhost:3000 in a clean browser profile.
-2. **Open Maya's sample workspace**.
-3. **Decisions → Controlled demo → Reset demo → Reset demo** (starts with no evaluation).
-4. Go to **Home**. Zoom 100–125%. Press **P** for presentation mode.
-5. Keep `prototype/index.html` open in a second tab as the fallback.
+1. Check the model: `ollama list` shows `llama3.2:1b`; `curl -s http://127.0.0.1:11434/api/version` answers.
+2. `npm run demo`, open http://localhost:3000 in a clean browser profile → **Open Maya's sample workspace**.
+3. **Decisions → Controlled demo → Reset demo**. Wait for the badge **Local AI · llama3.2:1b (1.2B)**
+   (opening Decisions also loads the model, ~2 s).
+4. Ask one suggested question once as a warm-up, then **Reset demo** again.
+5. Go to **Home**, zoom 100–125%, press **P**. Keep `prototype/index.html` open in another tab.
 
-## 90-second click path
+## Showcase sequence (~2 minutes)
 
-| Time | Click | Say |
+| Step | Click | Say |
 |---|---|---|
-| 0:00 | **Home** | "Students juggle attendance in one portal, deadlines in another and opportunities everywhere else. CampusPilot turns that into one decision with evidence. Everything here is a fictional student on synthetic data." Point at **Needs attention** — it is derived from the records. |
-| 0:10 | **Start evaluation** → **Evaluate options** | "This is a guided mission — event participation. Specialists read Maya's records through scoped tools; a deterministic engine does every calculation. No language model is involved." |
-| 0:25 | Click **Attend full event**, then **Attend selected sessions** in the table | "Full attendance projects Network Security at **74.2%**, below the sample 75% rule. Selected sessions gives **77.4%**, deferring **80.6%**. The formula is right here." Point at the recommendation: "It's *conditional* — eligibility, on-duty approval and the real regulation are still unverified." |
-| 0:40 | **Approve plan** | Point at the rail: "Maya approved *her plan* — that's all. On-duty permission and eligibility stay 'not verified'. The server saved three local tasks and we read them back." |
-| 0:55 | Rail → **Move deadline to Oct 28, 7:00 PM** | "Now the assignment deadline changes in the academic source. Maya doesn't type anything." Pause on the three steps: "Deadline Oct 29 → Oct 28. CampusPilot moved the work block from Oct 28 to Oct 27. Her earlier approval no longer applies." |
-| 1:15 | **Security** → **Run access check** | "The AI doesn't own permissions. These are real requests from this browser, with Maya's session, against another student's records: 403 every time, and your own record 200. It's in the audit log." |
-| 1:30 | (optional) **Activity** | "Every step was recorded while it ran — and it's labelled 'deterministic agent workflow, no model', because that's what it is." |
+| 1. Home | — | "Attendance, deadlines and opportunities live in different places. CampusPilot turns them into one decision with evidence. Everything is a fictional student on synthetic data." Point at **Needs attention**. |
+| 2. Local AI | **Start evaluation** → in *Ask your local agent* type or click "What is my biggest attendance risk?" | "This is a 1.2-billion-parameter model running on this laptop through Ollama — no cloud. It decides what this question is about and which records to check." Point at **Interpreted as** and **Records checked**: "It asked for attendance; the server added the course list and the policy it needs to calculate." |
+| 2b. (optional) | Click "Which deadline conflicts with the hackathon?" | "Different question, different investigation: now it reads deadlines and the event dates." |
+| 3. Compare | **Evaluate options** | "The model chose *what* to look at — ordinary code does the maths: full **74.2%**, selected sessions **77.4%**, defer **80.6%**. The recommendation is conditional; eligibility and on-duty approval are still unverified." |
+| 4. Approve | **Approve plan** | "Maya approved *her plan* — that's all. The rail still says on-duty permission and eligibility are not verified. The server created three local tasks and read them back." |
+| 5. Replan | **Move deadline to Oct 28, 7:00 PM** | Pause on the three steps: "Deadline Oct 29 → Oct 28. Work block Oct 28 → Oct 27. Her approval no longer applies — no new prompt needed." |
+| 6. Security | **Security → Run access check** | "Real requests with Maya's session against another student's records: 403 every time, and it's in the audit log. The AI can't change that — permissions live outside the model." |
+| 7. Activity | **Activity** → the *Asked:* run | "Here's the actual model call: llama3.2:1b, the intent it chose, the tools it requested, which the server added, and that nothing was written." |
 
 ## Where is the AI? What is real?
 
-- **Agents** are a fixed workflow of scoped tool calls with recorded traces. A model would plug in
-  *through the same tool gateway*; the arithmetic and the permissions would stay deterministic.
-- **Real and tested:** the engine, isolation, approvals, replanning, tool scopes, accessibility
-  scans. **Simulated:** student, event, records, policy, the deadline change, sign-in.
-  **Not built:** VTOP, live model, OD/eligibility verification, SSO.
+- **Real local inference:** llama3.2:1b on this Mac routes questions to tools (schema-constrained JSON,
+  validated by the server). Measured 1–2 s per question when warm.
+- **Deterministic:** every percentage, conflict, recommendation, approval and replan.
+- **Synthetic:** student, event, records, policy, the deadline change, sign-in.
+- **Not built:** VTOP, cloud models, model-written answers (a 1B model misstated a percentage in
+  testing, so we show verified findings instead), OD/eligibility verification, SSO.
 
 ## Likely judge questions
 
-- **"Is this connected to VTOP?"** No. There is no authorised VIT Vellore API; we use a simulator
-  and never ask for credentials.
-- **"Can it guarantee I won't be debarred?"** No. It shows arithmetic under a stated sample policy
-  and keeps eligibility, exemptions and OD approval as "needs verification".
-- **"What if registration has closed?"** The engine marks participating options as not possible
-  and the server refuses to approve them; deferring is recommended instead.
-- **"What stops prompt injection?"** Event text is stored as data and never selects tools; tools
-  are allowlisted per role with strict schemas and server-injected identity. Tested against a
-  hostile notice in the deterministic workflow — not against a live model, which we don't have.
+- **"Is it a real model?"** Yes — open Activity: the run is `local_llm`, model `llama3.2:1b`, with the
+  timing of the actual call. `reports/ai-smoke.json` has the recorded test.
+- **"Why not let the model answer?"** It's 1.2B parameters on a CPU. It's good at deciding what to
+  check; we measured it misstating numbers when writing prose, so numbers come from code.
+- **"What stops it reading another student's data?"** It never gets identifiers; it can only name six
+  read-only tools; the server injects identity. We asked it to fetch another student's attendance —
+  it returned only Maya's own records.
+- **"Is this connected to VTOP?"** No. Simulator only; we never ask for credentials.
+- **"What if registration has closed?"** Participating options become not possible and can't be approved
+  (assuming she hasn't registered yet).
 - **"Impact?"** Not measured. We won't invent numbers.
 
 ## Contingency
 
-- **Green:** the path above.
-- **Amber:** something misbehaves → **Reset demo** and restart from Evaluate. Server down → stop,
-  `npm run db:reset`, `npm run demo`.
-- **Red:** laptop/Node fails → open `prototype/index.html` (works from a file, offline): "This is our
-  v1 static prototype; its permission denial is a UI illustration — the server-side version and its
-  tests are in the repository." Use `docs/screenshots/v2/1440x900` as slides.
+- **Model not ready** (badge says *Offline · keyword fallback*): continue — answers are labelled
+  "keyword fallback · not model output" and the numbers are identical. Say so plainly. Restart Ollama
+  from the menu bar if time allows.
+- **App misbehaves:** **Reset demo** and restart from step 2. Server down → stop, `npm run db:reset`,
+  `npm run demo`.
+- **Laptop/Node fails:** open `prototype/index.html` (works from a file, offline) and use
+  `docs/screenshots/v2/1440x900` as slides.
