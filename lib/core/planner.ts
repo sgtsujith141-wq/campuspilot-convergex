@@ -7,6 +7,7 @@ import type {
   PlanResult,
   PlanningFacts,
   Recommendation,
+  RegistrationFacts,
   TaskDraft,
   TimeBlock,
   UnknownCondition,
@@ -15,34 +16,41 @@ import { OPTION_IDS } from "@/lib/contracts";
 import { evaluateThreshold, formatPercent, projectAttendance } from "./attendance";
 import { formatBlock, formatIst, istIso, istParts, msToIst, overlaps, toMs } from "./time";
 
-export const ENGINE_VERSION = "campuspilot-engine/1.0.0";
+export const ENGINE_VERSION = "campuspilot-engine/1.1.0";
 
 const HOUR = 3600 * 1000;
 /** Suggested work blocks are evening slots; they are proposals, not timetable facts. */
 const BLOCK_START_HOUR = 18;
 /** Finish project work this many hours before the effective cutoff. */
-const PROJECT_BUFFER_HOURS = 12;
+export const PROJECT_BUFFER_HOURS = 12;
+/** Registration is "closing soon" inside this window. */
+export const CLOSING_SOON_HOURS = 48;
+/** Evidence older than this (relative to the scenario clock) is flagged as stale. */
+export const FRESHNESS_MAX_AGE_HOURS = 7 * 24;
 
+// Copy never claims knowledge of specific sessions or classes: no timetable source exists.
 const OPTION_COPY: Record<OptionId, { label: string; badge: string; description: string; participates: boolean }> = {
-  full: {
-    label: "Attend full event",
-    badge: "MAXIMUM PARTICIPATION",
-    description: "Both days on site. Misses the most scheduled classes and needs the most review.",
-    participates: true,
-  },
+  full: { label: "Attend full event", badge: "Full participation", description: "Attend both days of the event.", participates: true },
   partial: {
     label: "Attend selected sessions",
-    badge: "BALANCED",
-    description: "Join the sessions that avoid your scheduled Network Security and Database classes.",
+    badge: "Partial participation",
+    description: "Attend part of the event. Which sessions is your choice — CampusPilot cannot see the session schedule.",
     participates: true,
   },
-  defer: {
-    label: "Defer participation",
-    badge: "ACADEMIC-FIRST",
-    description: "Skip this edition, protect study time and look for a later cybersecurity event.",
-    participates: false,
-  },
+  defer: { label: "Defer participation", badge: "No participation", description: "Skip this edition and keep the week for coursework.", participates: false },
 };
+
+/**
+ * Registration state at the scenario clock. Exactly at the deadline counts as closed.
+ */
+export function registrationStatus(nowIso: string, deadline: string | null | undefined, sourceVerified = false): RegistrationFacts {
+  if (!deadline) return { status: "unverified", deadline: null, hoursRemaining: null, sourceVerified };
+  const diff = toMs(deadline) - toMs(nowIso);
+  const hoursRemaining = Math.floor(diff / HOUR);
+  if (diff <= 0) return { status: "closed", deadline, hoursRemaining, sourceVerified };
+  if (diff <= CLOSING_SOON_HOURS * HOUR) return { status: "closing_soon", deadline, hoursRemaining, sourceVerified };
+  return { status: "open", deadline, hoursRemaining, sourceVerified };
+}
 
 /**
  * Latest evening block [18:00, 18:00+h) in IST that ends by `limitMs`, starts after `notBeforeMs`
@@ -66,6 +74,12 @@ export function latestEveningBlock(
     return { start: startIso, end: msToIst(end) };
   }
   return null;
+}
+
+export function staleEvidence(facts: PlanningFacts): string[] {
+  const now = toMs(facts.now);
+  const refs = [...facts.courses.map((c) => c.ref), facts.opportunity.ref, facts.assignment.ref, facts.assessment.ref, ...(facts.policy ? [facts.policy.ref] : [])];
+  return refs.filter((r) => now - toMs(r.retrievedAt) > FRESHNESS_MAX_AGE_HOURS * HOUR).map((r) => r.id);
 }
 
 export function findConflicts(facts: PlanningFacts): Conflict[] {
@@ -114,11 +128,20 @@ export function findConflicts(facts: PlanningFacts): Conflict[] {
     });
   }
 
+  const reg = registrationStatus(facts.now, opportunity.registrationDeadline, opportunity.ref.verification === "verified");
+  const when = reg.deadline ? formatIst(reg.deadline) : "";
   conflicts.push({
     id: "registration_window",
     kind: "REGISTRATION_WINDOW",
-    severity: "info",
-    message: `Registration closes ${formatIst(opportunity.registrationDeadline)}; eligibility and on-duty approval should be confirmed before then.`,
+    severity: reg.status === "closed" ? "hard" : reg.status === "closing_soon" ? "soft" : "info",
+    message:
+      reg.status === "closed"
+        ? `Registration closed ${when} according to the event listing. This assumes you have not registered yet; if you already registered, check your status with the organisers.`
+        : reg.status === "closing_soon"
+          ? `Registration closes ${when} — in ${reg.hoursRemaining} hours. Eligibility and on-duty approval must be confirmed before then.`
+          : reg.status === "open"
+            ? `Registration is open until ${when}; eligibility and on-duty approval should be confirmed before then.`
+            : "No registration deadline is on record; check the official listing.",
     evidenceRefs: [opportunity.ref.id],
   });
   return conflicts;
@@ -151,7 +174,14 @@ export function projectCourses(facts: PlanningFacts, optionId: OptionId): Course
   });
 }
 
-function unknownConditionsFor(facts: PlanningFacts, participates: boolean): UnknownCondition[] {
+/** "Scenario estimate: 2 Network Security classes, 1 Database Systems class" — from data only. */
+export function absenceSummary(projections: CourseProjection[]): string {
+  const missed = projections.filter((p) => p.misses > 0);
+  if (missed.length === 0) return "No class absences in the scenario data.";
+  return `Scenario estimate: ${missed.map((p) => `${p.misses} ${p.name} class${p.misses === 1 ? "" : "es"}`).join(", ")}.`;
+}
+
+function unknownConditionsFor(facts: PlanningFacts, participates: boolean, stale: string[]): UnknownCondition[] {
   const out: UnknownCondition[] = [];
   if (participates) {
     out.push({
@@ -181,15 +211,23 @@ function unknownConditionsFor(facts: PlanningFacts, participates: boolean): Unkn
     });
   }
   out.push({
-    id: "timetable_slots",
-    label: "Suggested time blocks",
+    id: "timetable",
+    label: "Class timetable",
     status: "NEEDS_VERIFICATION",
-    reason: "No timetable source is connected, so suggested evening blocks are not checked against other commitments.",
+    reason: "The class timetable is a synthetic sample, not VTOP. Absence counts match it, but class times and suggested work blocks are not institutionally verified.",
   });
+  if (stale.length > 0) {
+    out.push({
+      id: "source_freshness",
+      label: "Source freshness",
+      status: "NEEDS_VERIFICATION",
+      reason: `${stale.join(", ")} ${stale.length === 1 ? "is" : "are"} older than ${FRESHNESS_MAX_AGE_HOURS / 24} days; refresh before relying on this plan.`,
+    });
+  }
   return out;
 }
 
-function tasksFor(facts: PlanningFacts, optionId: OptionId, projections: CourseProjection[]): TaskDraft[] {
+function tasksFor(facts: PlanningFacts, optionId: OptionId, projections: CourseProjection[], registration: RegistrationFacts): TaskDraft[] {
   const { assignment, assessment, opportunity, policy } = facts;
   const participates = OPTION_COPY[optionId].participates;
   const now = toMs(facts.now);
@@ -212,16 +250,18 @@ function tasksFor(facts: PlanningFacts, optionId: OptionId, projections: CourseP
     }
   }
 
-  if (participates) {
+  if (participates && registration.status !== "closed") {
     tasks.push({
       taskKey: "verify_participation",
       type: "create_local_task",
-      title: optionId === "partial" ? "Confirm selected sessions, eligibility and on-duty approval" : "Confirm eligibility and on-duty approval",
-      detail: `Check the official event rules and request advance on-duty approval from the appropriate authority before registration closes ${formatIst(opportunity.registrationDeadline)}.`,
-      dueAt: opportunity.registrationDeadline,
+      title: "Confirm eligibility and on-duty approval",
+      detail: registration.deadline
+        ? `Check the official event rules and request advance on-duty approval from the appropriate authority before registration closes ${formatIst(registration.deadline)}.`
+        : "Check the official event rules, the registration deadline and on-duty approval with the appropriate authority.",
+      dueAt: registration.deadline ?? undefined,
       evidenceRefs: [opportunity.ref.id],
     });
-  } else {
+  } else if (!participates) {
     tasks.push({
       taskKey: "later_event",
       type: "create_local_task",
@@ -249,7 +289,9 @@ function tasksFor(facts: PlanningFacts, optionId: OptionId, projections: CourseP
     evidenceRefs: [assignment.ref.id, ...(participates ? [opportunity.ref.id] : [])],
   });
 
-  const prepBlock = latestEveningBlock(toMs(assessment.startsAt), now, assessment.studyHoursDesired, participates ? [event] : []);
+  // Preparation must not collide with the event or with the project block chosen above.
+  const avoid = [...(participates ? [event] : []), ...(projectBlock ? [{ start: toMs(projectBlock.start), end: toMs(projectBlock.end) }] : [])];
+  const prepBlock = latestEveningBlock(toMs(assessment.startsAt), now, assessment.studyHoursDesired, avoid);
   tasks.push({
     taskKey: "assessment_prep",
     type: "create_local_task",
@@ -265,6 +307,8 @@ function tasksFor(facts: PlanningFacts, optionId: OptionId, projections: CourseP
 }
 
 export function enumerateOptions(facts: PlanningFacts): DecisionOption[] {
+  const registration = registrationStatus(facts.now, facts.opportunity.registrationDeadline, facts.opportunity.ref.verification === "verified");
+  const stale = staleEvidence(facts);
   return OPTION_IDS.map((id) => {
     const copy = OPTION_COPY[id];
     const projections = projectCourses(facts, id);
@@ -278,8 +322,13 @@ export function enumerateOptions(facts: PlanningFacts): DecisionOption[] {
       if (policyBinding) hardViolations.push(`${msg} (verified policy).`);
       else flags.push(`${msg} of the sample policy (not an official rule).`);
     }
-    const tasks = tasksFor(facts, id, projections);
-    const unknownConditions = unknownConditionsFor(facts, copy.participates);
+    if (copy.participates && registration.status === "closed") {
+      hardViolations.push(`Registration closed ${formatIst(registration.deadline!)} according to the event listing (assumes you have not registered yet).`);
+    } else if (copy.participates && registration.status === "closing_soon") {
+      flags.push(`Registration closes in ${registration.hoursRemaining} hours.`);
+    }
+    const tasks = tasksFor(facts, id, projections, registration);
+    const unknownConditions = unknownConditionsFor(facts, copy.participates, stale);
     const evidenceRefs = Array.from(
       new Set([
         ...projections.map((p) => p.evidenceRef),
@@ -294,6 +343,8 @@ export function enumerateOptions(facts: PlanningFacts): DecisionOption[] {
       label: copy.label,
       badge: copy.badge,
       description: copy.description,
+      absenceSummary: absenceSummary(projections),
+      totalAbsences: projections.reduce((n, p) => n + p.misses, 0),
       participates: copy.participates,
       projections,
       numericStatus,
@@ -307,17 +358,12 @@ export function enumerateOptions(facts: PlanningFacts): DecisionOption[] {
 }
 
 /**
- * Conditional ranking: drop verified hard violations, then prefer options without a numeric
- * shortfall, then options that satisfy the student's participation goal, then fewer absences.
+ * Conditional ranking: drop verified hard violations (including a closed registration), then
+ * prefer options without a numeric shortfall, then options that satisfy the participation goal,
+ * then fewer absences.
  */
 export function recommend(options: DecisionOption[], facts: PlanningFacts): Recommendation {
-  const totalMisses = (o: DecisionOption) => o.projections.reduce((n, p) => n + p.misses, 0);
-  const key = (o: DecisionOption) => [
-    o.hardViolations.length > 0 ? 1 : 0,
-    o.numericStatus === "NOT_OK_NUMERIC_ONLY" ? 1 : 0,
-    o.participates ? 0 : 1,
-    totalMisses(o),
-  ];
+  const key = (o: DecisionOption) => [o.hardViolations.length > 0 ? 1 : 0, o.numericStatus === "NOT_OK_NUMERIC_ONLY" ? 1 : 0, o.participates ? 0 : 1, o.totalAbsences];
   const ranked = [...options].sort((a, b) => {
     const ka = key(a);
     const kb = key(b);
@@ -333,7 +379,9 @@ export function recommend(options: DecisionOption[], facts: PlanningFacts): Reco
   }
   if (best.participates) reasons.push(`Still joins ${facts.opportunity.name}, matching the stated goal.`);
   for (const o of ranked.slice(1)) {
-    if (o.numericStatus === "NOT_OK_NUMERIC_ONLY") {
+    if (o.hardViolations.length > 0) {
+      reasons.push(`${o.label} is not possible: ${o.hardViolations[0]}`);
+    } else if (o.numericStatus === "NOT_OK_NUMERIC_ONLY") {
       const worst = o.projections.find((p) => p.status === "NOT_OK_NUMERIC_ONLY")!;
       reasons.push(`${o.label} projects ${worst.name} at ${formatPercent(worst.percent)}, below the sample threshold.`);
     } else if (!o.participates) {
@@ -373,7 +421,9 @@ export function evaluatePlan(facts: PlanningFacts): PlanResult {
       registrationDeadline: facts.opportunity.registrationDeadline,
       policyThreshold: facts.policy?.minimumAttendancePercent ?? null,
       policyIsOfficial: facts.policy?.isOfficial ?? false,
+      registration: registrationStatus(facts.now, facts.opportunity.registrationDeadline, facts.opportunity.ref.verification === "verified"),
     },
+    freshness: { maxAgeHours: FRESHNESS_MAX_AGE_HOURS, stale: staleEvidence(facts) },
     options,
     recommendation,
     conflicts: findConflicts(facts),

@@ -13,7 +13,7 @@ export function ensureFixtures(db: Db) {
     evaluateMission(
       db,
       OTHER_FIXTURE.studentId,
-      { goal: "Isolation fixture: evaluate CyberForge Sprint", opportunityId: scenario.opportunity.id },
+      { missionType: "event_participation", opportunityId: scenario.opportunity.id },
       OTHER_FIXTURE.missionId,
     );
   }

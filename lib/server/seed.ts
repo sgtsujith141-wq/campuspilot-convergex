@@ -14,9 +14,26 @@ type SourceSeed = {
   id: string;
   ownerId: string | null;
   kind: string;
-  recordType: "course" | "assignment" | "assessment" | "opportunity" | "policy";
+  recordType: "course" | "assignment" | "assessment" | "opportunity" | "policy" | "timetable";
   label: string;
   payload: unknown;
+};
+
+/** Synthetic weekly timetable (sample records, not VTOP). Its sessions explain the seed's
+ *  futureScheduled and missesByOption counts; a unit test checks that they agree. */
+export const MAYA_TIMETABLE = {
+  plannedPartialWindow: { start: "2026-10-29T10:00:00+05:30", end: "2026-10-29T13:00:00+05:30", note: "Guided selected-session assumption" },
+  sessions: [
+    { id: "cls_ns_1026", courseId: "course_ns", code: "CS201", name: "Network Security", type: "Lecture", start: "2026-10-26T11:00:00+05:30", end: "2026-10-26T12:00:00+05:30", room: "SJT 402", instructor: "Dr. A. Menon" },
+    { id: "cls_db_1026", courseId: "course_db", code: "CS203", name: "Database Systems", type: "Lab", start: "2026-10-26T14:00:00+05:30", end: "2026-10-26T15:00:00+05:30", room: "TT Lab 3", instructor: "Prof. R. Iyer" },
+    { id: "cls_dm_1027", courseId: "course_dm", code: "MA202", name: "Discrete Mathematics", type: "Lecture", start: "2026-10-27T09:00:00+05:30", end: "2026-10-27T10:00:00+05:30", room: "MB 214", instructor: "Dr. S. Kapoor" },
+    { id: "cls_dm_1028", courseId: "course_dm", code: "MA202", name: "Discrete Mathematics", type: "Lecture", start: "2026-10-28T09:00:00+05:30", end: "2026-10-28T10:00:00+05:30", room: "MB 214", instructor: "Dr. S. Kapoor" },
+    { id: "cls_ns_1028", courseId: "course_ns", code: "CS201", name: "Network Security", type: "Lecture", start: "2026-10-28T11:00:00+05:30", end: "2026-10-28T12:00:00+05:30", room: "SJT 402", instructor: "Dr. A. Menon" },
+    { id: "cls_db_1028", courseId: "course_db", code: "CS203", name: "Database Systems", type: "Lecture", start: "2026-10-28T14:00:00+05:30", end: "2026-10-28T15:00:00+05:30", room: "SJT 310", instructor: "Prof. R. Iyer" },
+    { id: "cls_ns_1029", courseId: "course_ns", code: "CS201", name: "Network Security", type: "Lecture", start: "2026-10-29T11:00:00+05:30", end: "2026-10-29T12:00:00+05:30", room: "SJT 402", instructor: "Dr. A. Menon" },
+    { id: "cls_db_1029", courseId: "course_db", code: "CS203", name: "Database Systems", type: "Lab", start: "2026-10-29T14:00:00+05:30", end: "2026-10-29T15:00:00+05:30", room: "TT Lab 3", instructor: "Prof. R. Iyer" },
+    { id: "cls_ns_1030", courseId: "course_ns", code: "CS201", name: "Network Security", type: "Lab", start: "2026-10-30T11:00:00+05:30", end: "2026-10-30T12:00:00+05:30", room: "TT Lab 1", instructor: "Dr. A. Menon" },
+  ],
 };
 
 function studentSources(studentId: string): SourceSeed[] {
@@ -48,6 +65,7 @@ function studentSources(studentId: string): SourceSeed[] {
         label: `${s.name} record`,
         payload: { id: s.id, courseId: s.courseId, name: s.name, startsAt: s.startsAt, studyHoursDesired: s.studyHoursDesired },
       },
+      { id: "timetable_maya", ownerId: MAYA_ID, kind: "academic_simulator", recordType: "timetable", label: "Synthetic class timetable (Oct 26–30)", payload: MAYA_TIMETABLE },
     ];
   }
   if (studentId === OTHER_ID) {
@@ -135,6 +153,14 @@ export function seedDatabase(db: DatabaseSync) {
   // login_enabled = 0: the sample-login route can never issue a session for this profile.
   insertStudent.run(OTHER_ID, "Test Student B", "Sample campus environment", JSON.stringify({ interests: [], goals: [] }), 0);
   for (const s of [...sharedSources(), ...studentSources(MAYA_ID), ...studentSources(OTHER_ID)]) insertSource(db, s);
+}
+
+/** Additive upgrade for existing databases: insert any seed record that is missing (never overwrites). */
+export function seedMissingSources(db: DatabaseSync) {
+  for (const s of [...sharedSources(), ...studentSources(MAYA_ID), ...studentSources(OTHER_ID)]) {
+    const exists = db.prepare("SELECT 1 FROM source_records WHERE id = ?").get(s.id);
+    if (!exists) insertSource(db, s);
+  }
 }
 
 /** Restore one student's synthetic source records to the seed (demo reset). */

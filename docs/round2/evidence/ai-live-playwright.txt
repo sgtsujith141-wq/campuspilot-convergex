@@ -1,0 +1,6 @@
+
+Running 1 test using 1 worker
+
+  ✓  1 e2e/ai-live.spec.ts:8:5 › the real local model routes different questions to different investigations (4.9s)
+
+  1 passed (12.7s)

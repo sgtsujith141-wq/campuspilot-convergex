@@ -1,8 +1,10 @@
 import type { FactChange, PlanResult, RevisionDiff, TaskChange, TaskDraft } from "@/lib/contracts";
 import { formatIst } from "./time";
 
-const FACT_LABELS: Record<keyof PlanResult["facts"], string> = {
-  assignmentDueAt: "Database mini-project due",
+type ScalarFact = Exclude<keyof PlanResult["facts"], "registration">;
+
+const FACT_LABELS: Record<ScalarFact, string> = {
+  assignmentDueAt: "Assignment due",
   assessmentStartsAt: "Assessment starts",
   eventStart: "Event starts",
   eventEnd: "Event ends",
@@ -25,10 +27,13 @@ function display(v: unknown): string | number | null {
 /** Semantic comparison of two plan results; ignores computedAt. */
 export function diffPlans(before: PlanResult, after: PlanResult, fromRevision: number, toRevision: number): RevisionDiff {
   const facts: FactChange[] = [];
-  for (const k of Object.keys(FACT_LABELS) as (keyof PlanResult["facts"])[]) {
+  for (const k of Object.keys(FACT_LABELS) as ScalarFact[]) {
     if (before.facts[k] !== after.facts[k]) {
       facts.push({ field: k, label: FACT_LABELS[k], before: display(before.facts[k]), after: display(after.facts[k]) });
     }
+  }
+  if (before.facts.registration?.status !== after.facts.registration?.status) {
+    facts.push({ field: "registration", label: "Registration", before: before.facts.registration?.status ?? null, after: after.facts.registration?.status ?? null });
   }
 
   const tasks: TaskChange[] = [];

@@ -25,6 +25,7 @@ export function missionView(db: Db, studentId: string, mission: MissionRow): Mis
   return {
     id: mission.id,
     goal: mission.goal,
+    missionType: "event_participation",
     opportunityId: mission.opportunity_id,
     revision: mission.revision,
     status: mission.status,
@@ -67,7 +68,7 @@ export function taskView(t: TaskRow): TaskView {
 }
 
 type RunRow = { id: string; kind: RunView["kind"]; mode: RunView["mode"]; model: string | null; revision: number; started_at: string; completed_at: string | null; status: string; summary: string };
-type EventRow = { seq: number; actor: string; tool: string | null; started_at: string; completed_at: string | null; duration_ms: number | null; status: string; mode: TraceEventView["mode"]; summary: string; args_json: string | null; evidence_refs_json: string; error: string | null };
+type EventRow = { seq: number; actor: string; tool: string | null; started_at: string; completed_at: string | null; duration_ms: number | null; status: string; mode: TraceEventView["mode"]; summary: string; args_json: string | null; evidence_refs_json: string; error: string | null; requested_by: TraceEventView["requestedBy"] };
 
 export function runEvents(db: Db, studentId: string, runId: string): TraceEventView[] {
   return all<EventRow>(db, "SELECT * FROM trace_events WHERE run_id = ? AND student_id = ? ORDER BY seq", runId, studentId).map((e) => ({
@@ -83,6 +84,7 @@ export function runEvents(db: Db, studentId: string, runId: string): TraceEventV
     args: e.args_json ? JSON.parse(e.args_json) : null,
     evidenceRefs: JSON.parse(e.evidence_refs_json),
     error: e.error,
+    requestedBy: e.requested_by ?? null,
   }));
 }
 
@@ -101,7 +103,22 @@ export function listRuns(db: Db, studentId: string, limit = 8): RunView[] {
   }));
 }
 
-export function workspaceSnapshot(db: Db, studentId: string): WorkspaceSnapshot {
+function opportunityView(r: SourceRow) {
+  const o = JSON.parse(r.payload_json);
+  return {
+    id: o.id,
+    name: o.name,
+    start: o.start,
+    end: o.end,
+    registrationDeadline: o.registrationDeadline,
+    eligibility: o.eligibility,
+    approval: o.approval,
+    fictional: !!o.fictional,
+    verification: r.verification,
+  };
+}
+
+export function workspaceSnapshot(db: Db, studentId: string, sessionExpiresAt: string | null = null): WorkspaceSnapshot {
   const student = one<{ display_name: string; campus: string; fictional: number; profile_json: string }>(db, "SELECT * FROM students WHERE id = ?", studentId)!;
   const own = all<SourceRow>(db, "SELECT * FROM source_records WHERE owner_id = ? ORDER BY rowid", studentId);
   const shared = all<SourceRow>(db, "SELECT * FROM source_records WHERE owner_id IS NULL ORDER BY rowid");
@@ -114,11 +131,11 @@ export function workspaceSnapshot(db: Db, studentId: string): WorkspaceSnapshot 
   const assessmentRow = listOwnSources(db, studentId, "assessment")[0];
   const a = JSON.parse(assignmentRow.payload_json);
   const s = JSON.parse(assessmentRow.payload_json);
-  const oppRow = shared.find((r) => r.record_type === "opportunity")!;
-  const o = JSON.parse(oppRow.payload_json);
+  const opportunities = shared.filter((r) => r.record_type === "opportunity").map(opportunityView);
   const policyRow = shared.find((r) => r.record_type === "policy");
   const pol = policyRow ? JSON.parse(policyRow.payload_json) : null;
   const mission = latestOwnMission(db, studentId);
+  const opportunity = opportunities.find((o) => o.id === mission?.opportunity_id) ?? opportunities[0];
   const seedA = assignmentSeed();
 
   const events = all<{ id: string; at: string; source_id: string; old_version: number; new_version: number; payload_json: string }>(
@@ -152,7 +169,15 @@ export function workspaceSnapshot(db: Db, studentId: string): WorkspaceSnapshot 
     courses,
     assignment: { id: a.id, name: a.name, dueAt: a.dueAt, version: assignmentRow.version, originalDueAt: seedA.dueAt, demoDueAt: seedA.modifiedDemoDueAt, updatedAt: assignmentRow.retrieved_at },
     assessment: { id: s.id, name: s.name, startsAt: s.startsAt, studyHoursDesired: s.studyHoursDesired },
-    opportunity: { id: o.id, name: o.name, start: o.start, end: o.end, registrationDeadline: o.registrationDeadline, eligibility: o.eligibility, approval: o.approval, fictional: !!o.fictional },
+    opportunity,
+    opportunities,
+    session: { kind: "sample_login", expiresAt: sessionExpiresAt },
+    timetable: (() => {
+      const row = own.find((r) => r.record_type === "timetable");
+      if (!row) return null;
+      const p = JSON.parse(row.payload_json);
+      return { sourceId: row.id, label: row.label, version: row.version, verification: row.verification, partialWindow: p.plannedPartialWindow, sessions: p.sessions };
+    })(),
     policy: pol ? { threshold: pol.minimumAttendancePercent, isOfficial: pol.isOfficial, appliesTo: pol.appliesTo, notes: pol.notes } : null,
     mission: mission ? missionView(db, studentId, mission) : null,
     tasks: listOwnTasks(db, studentId).map(taskView),

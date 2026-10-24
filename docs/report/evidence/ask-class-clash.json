@@ -1,0 +1,143 @@
+{
+  "runId": "run_f3acc22fa14542c5",
+  "status": "answered",
+  "mode": "local_llm",
+  "modelStatus": "local_model_ready",
+  "model": "llama3.2:1b",
+  "question": "Which classes clash with the hackathon, and what should I do?",
+  "intent": "class_clashes",
+  "intentLabel": "Class clashes",
+  "routing": {
+    "source": "model",
+    "modelTools": [
+      "get_my_timetable",
+      "get_event"
+    ],
+    "serverTools": [],
+    "attempts": 1,
+    "modelMs": 1886,
+    "rejected": []
+  },
+  "tools": [
+    {
+      "name": "get_my_timetable",
+      "requestedBy": "model",
+      "status": "succeeded",
+      "evidenceRefs": [
+        "timetable_maya"
+      ]
+    },
+    {
+      "name": "get_event",
+      "requestedBy": "model",
+      "status": "succeeded",
+      "evidenceRefs": [
+        "opp_cyberforge"
+      ]
+    }
+  ],
+  "findings": [
+    "Full event (Oct 29, 10:00 AM – Oct 30, 5:00 PM): clashes with 3 classes — Network Security lecture (Thu, Oct 29 · 11:00 AM–12:00 PM), Database Systems lab (Thu, Oct 29 · 2:00 PM–3:00 PM), Network Security lab (Fri, Oct 30 · 11:00 AM–12:00 PM).",
+    "Selected sessions (Thu, Oct 29, 10:00 AM–1:00 PM): clashes with 1 class — Network Security lecture (Thu, Oct 29 · 11:00 AM–12:00 PM).",
+    "Defer: no class clashes from the event."
+  ],
+  "unknowns": [
+    "The timetable is a synthetic sample; class times are not institutionally verified.",
+    "Event session times come from an unverified listing."
+  ],
+  "answer": {
+    "headline": "Attending the full event clashes with three classes; selected sessions clash with one.",
+    "items": [
+      {
+        "title": "Network Security (CS201)",
+        "tag": "2 classes in the full event",
+        "tone": "bad",
+        "detail": "Lecture Thu, Oct 29 · 11:00 AM–12:00 PM, SJT 402; Lab Fri, Oct 30 · 11:00 AM–12:00 PM, TT Lab 1. Selected sessions still miss 1 of these."
+      },
+      {
+        "title": "Database Systems (CS203)",
+        "tag": "1 class in the full event",
+        "tone": "warn",
+        "detail": "Lab Thu, Oct 29 · 2:00 PM–3:00 PM, TT Lab 3. Selected sessions avoid these."
+      }
+    ],
+    "nextStep": "Selected sessions (Thu, Oct 29, 10:00 AM–1:00 PM) miss only Network Security lecture (Thu, Oct 29 · 11:00 AM–12:00 PM). Compare the options to see the attendance impact, and confirm the session times with the organisers.",
+    "clashes": [
+      {
+        "optionId": "full",
+        "label": "Attend full event",
+        "window": "Oct 29, 10:00 AM – Oct 30, 5:00 PM",
+        "sessions": [
+          {
+            "id": "cls_ns_1029",
+            "course": "Network Security (CS201)",
+            "type": "Lecture",
+            "when": "Thu, Oct 29 · 11:00 AM–12:00 PM",
+            "room": "SJT 402"
+          },
+          {
+            "id": "cls_db_1029",
+            "course": "Database Systems (CS203)",
+            "type": "Lab",
+            "when": "Thu, Oct 29 · 2:00 PM–3:00 PM",
+            "room": "TT Lab 3"
+          },
+          {
+            "id": "cls_ns_1030",
+            "course": "Network Security (CS201)",
+            "type": "Lab",
+            "when": "Fri, Oct 30 · 11:00 AM–12:00 PM",
+            "room": "TT Lab 1"
+          }
+        ]
+      },
+      {
+        "optionId": "partial",
+        "label": "Attend selected sessions",
+        "window": "Thu, Oct 29, 10:00 AM–1:00 PM",
+        "sessions": [
+          {
+            "id": "cls_ns_1029",
+            "course": "Network Security (CS201)",
+            "type": "Lecture",
+            "when": "Thu, Oct 29 · 11:00 AM–12:00 PM",
+            "room": "SJT 402"
+          }
+        ]
+      },
+      {
+        "optionId": "defer",
+        "label": "Defer participation",
+        "window": "No event time",
+        "sessions": []
+      }
+    ],
+    "verify": [
+      "Sample timetable — not VTOP and not institutionally verified.",
+      "Event session times and on-duty approval are unverified."
+    ],
+    "actions": [
+      "timetable",
+      "compare",
+      "plan"
+    ]
+  },
+  "summary": null,
+  "sources": [
+    {
+      "id": "opp_cyberforge",
+      "label": "CyberForge Sprint listing",
+      "version": 1,
+      "verification": "synthetic"
+    },
+    {
+      "id": "timetable_maya",
+      "label": "Synthetic class timetable (Oct 26–30)",
+      "version": 1,
+      "verification": "synthetic"
+    }
+  ],
+  "notes": [],
+  "stale": false,
+  "durationMs": 1889
+}

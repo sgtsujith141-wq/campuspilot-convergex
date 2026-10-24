@@ -1,0 +1,30 @@
+1:36:38 PM
+mission.approve → msn_other_demo
+Denied 403
+1:36:38 PM
+mission.read → msn_other_demo
+Denied 403
+1:36:38 PM
+course.read → oth_course_ns
+Denied 403
+1:36:34 PM
+demo.source_change → assignment_db
+Allowed
+1:36:34 PM
+mission.approve → msn_03771a30ed344a14
+Allowed
+1:36:32 PM
+mission.evaluate → msn_03771a30ed344a14
+Allowed
+1:36:29 PM
+ai.ask
+Allowed
+1:36:18 PM
+demo.reset
+Allowed
+1:36:18 PM
+session.sample_login
+Allowed
+1:36:01 PM
+ai.ask
+Allowed

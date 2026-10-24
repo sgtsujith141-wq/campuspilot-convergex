@@ -1,166 +1,203 @@
-# CampusPilot — controlled demo
+# CampusPilot
 
-**VIT ConvergeX 2026 · PS2 AI-Based Smart Campus Management · Track 1 (AI Agents)**
+**A local-AI decision agent for students: it connects attendance, timetable, deadlines and events
+before a student commits to an opportunity.**
 
-CampusPilot is a permission-scoped student decision agent. A student asks whether an
-opportunity fits their academics; scoped specialists gather evidence; a deterministic engine
-computes the consequences of each option; the student approves an action plan; and when a
-source record changes, the affected plan is revised and the old approval invalidated, without
-a new prompt.
+VIT ConvergeX 2026 · AI Solution Sprint · **PS2 AI-Based Smart Campus Management** · **Track 1 (AI Agents)**
 
-> **Everything shown is synthetic.** Maya Rao, "Test Student B", CyberForge Sprint, the academic
-> records and the 75% threshold are fictional and labelled as such. CampusPilot is **not**
-> connected to VTOP or any university system and does **not** call a language model in this build.
+[![CI](https://github.com/sgtsujith141-wq/campuspilot-convergex/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sgtsujith141-wq/campuspilot-convergex/actions/workflows/ci.yml)
+![Next.js 16](https://img.shields.io/badge/Next.js-16-142d35)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-11716c)
+![Local AI](https://img.shields.io/badge/local%20AI-llama3.2%3A1b%20via%20Ollama-11716c)
+![Data](https://img.shields.io/badge/data-synthetic-b7791f)
 
-## Run it
+![The local model routes a class-clash question; the engine computes the clashes per option](docs/screenshots/v2/1440x900/03b-local-ai-answer.png)
 
-Requires Node.js **≥ 22.13** (it uses the built-in `node:sqlite`; developed on Node 24.19).
-You don't need internet access, API keys or Docker once the dependencies are installed.
+In this MVP a student is considering a two-day cybersecurity hackathon. CampusPilot:
 
-```bash
-npm install
-npm run dev          # http://localhost:3000  (development)
-# or, for the showcase machine:
-npm run demo         # production build + start on http://localhost:3000
-```
+1. lets the student **ask a question**. A **local language model** (`llama3.2:1b`, running on the
+   same computer) decides what the question is about and which of the student's records to check.
+2. reads the (synthetic) records through **permission-scoped, read-only tools**.
+3. computes the consequences of three choices with a **deterministic engine**: attendance
+   projections, class clashes, deadline conflicts and the registration window.
+4. recommends one option **conditionally**, keeping visible what must still be verified.
+5. saves the action plan as local tasks **only after the student approves** that exact plan revision.
+6. **replans by itself** when a source record changes, and invalidates the old approval.
 
-1. Open http://localhost:3000 and click **Open Maya's sample workspace**.
-2. Press **P** (or the expand icon in the top bar) for presentation mode.
-3. Reset between rehearsals with **Decision studio → Reset scenario**, or `npm run db:reset`
-   while the server is stopped.
+The model chooses *how to investigate*. It never produces the numbers.
 
-**Offline fallback (no Node at all):** open `prototype/index.html` in any browser. It is the
-untouched static prototype from the build kit (a unit test checks it is byte-identical).
-
-### Environment variables (all optional) — see `.env.example`
-
-| Variable | Default | Effect |
-|---|---|---|
-| `CAMPUSPILOT_DEMO_MODE` | `on` | `off` disables sample login, the source-change simulator and reset (they return 404). |
-| `CAMPUSPILOT_DB_PATH` | `./.data/campuspilot.db` | SQLite file. Created and seeded on first request. |
-| `LLM_API_KEY`, `LLM_MODEL`, `LLM_BASE_URL` | unset | Reserved names. **Not used**: no live-model path exists in this build. |
-
-## What is real, what is synthetic, what is not built
-
-| Capability | Status |
-|---|---|
-| Attendance projection `100×(A+H−M)/(T+H)`, NS 74.2 / 77.4 / 80.6 % | **Implemented, unit-tested** (pure TypeScript, `lib/core`) |
-| Full / partial / defer options, conditional ranking, unknowns as `NEEDS_VERIFICATION` | **Implemented, tested** |
-| Server sessions; every route scoped to the session owner; uniform 403 | **Implemented, tested over real HTTP** |
-| Approval gateway: revision pin (409 stale), consent challenge, idempotency, `create_local_task` execution + read-back | **Implemented, tested** |
-| Source change → `SOURCE_UPDATED` → dependent-mission replan → revision bump → approval invalidated → diff | **Implemented, tested** |
-| Scoped agent tools (academic / opportunity / evaluator / planner) with allowlists, strict schemas, call budget | **Implemented, tested** |
-| Agent traces (`/agents`) | **Real**: persisted from executed tool calls, `mode=deterministic` |
-| Trust-center probe | **Real**: HTTP requests from the browser with Maya's cookie; server returns 403 |
-| Student, second test profile, event, academic records, 75 % policy | **Synthetic** (seed: `CampusPilot_Build_Kit/data/demo-scenario.json`) |
-| Sample login | **Demo-only**: issues a session for the one login-enabled fictional profile; accepts no identity input |
-| Live LLM orchestration (Gate 4) | **Not built**: no credential was available to verify it, so nothing claims it |
-| VTOP / ERP integration, OD approval, eligibility verification, SSO | **Not built** |
-
-The language model provider is **none**. Every agent run is labelled "Offline guided workflow".
+> **Honesty first.** The student (Maya Rao), "Test Student B", CyberForge Sprint, the academic
+> records, the timetable and the 75% threshold are all fictional. CampusPilot is **not** connected to
+> VTOP or any university system. The model only routes questions to read-only tools; every number
+> comes from ordinary, tested code.
 
 ## Screens
 
-| Route | What it demonstrates |
+| | |
 |---|---|
-| `/overview` | Dashboard: attention cards, attendance snapshot (sample threshold marker), upcoming commitments that update when the source changes, approved tasks read from the server. |
-| `/decisions` | Ask → three option cards → conditional recommendation with unknowns → projections + evidence modal (A/T/H/M, source versions) → approve → simulated deadline change → inline replan diff + invalidated approval. |
-| `/agents` | Persisted trace runs (initial evaluation, source-triggered replan, re-runs): each tool call, its arguments, outcome, evidence refs and duration; per-specialist tool allowlists. |
-| `/trust` | Access rules with honest status (Enforced / Partial / Demo), live cross-student probe, server audit log, last recorded test run, the "what we can claim" table. |
+| ![Home](docs/screenshots/v2/1440x900/01-home.png) **Home**: what needs attention, from synthetic records | ![Options](docs/screenshots/v2/1440x900/03-decisions-evaluated.png) **Decisions**: three options computed by the engine (74.2 / 77.4 / 80.6%) and a conditional recommendation |
+| ![Timetable](docs/screenshots/v2/1440x900/03c-timetable.png) **Timetable**: the class missed under "selected sessions", by real interval overlap | ![Replanning](docs/screenshots/v2/1440x900/04-decisions-replanned.png) **Replanning**: deadline moved → revision 2, work block moved, approval invalidated |
+| ![Activity](docs/screenshots/v2/1440x900/07a-activity-local-ai.png) **Activity**: the recorded `local_llm` run, with each tool marked "requested by the local model" | ![Security](docs/screenshots/v2/1440x900/08-security.png) **Security**: live access check; real 403s for another student's records |
+| ![Presentation mode](docs/screenshots/v2/1440x900/09-presentation-mode.png) **Presentation mode (P)**: the sidebar hides and a top-bar navigation appears | ![Mobile](docs/screenshots/v2/390x844/01-home.png) **Mobile** (390 px) |
 
-Screenshots (1440×900 unless noted) are regenerated by the e2e suite in `docs/screenshots/`.
+**Opening sequence** (`/overview?intro=1`, 30 s, replays on every load):
+
+| | | | |
+|---|---|---|---|
+| ![Records](docs/screenshots/v2/1440x900/10-intro-records.png) | ![Conflict](docs/screenshots/v2/1440x900/11-intro-conflict.png) | ![Pipeline](docs/screenshots/v2/1440x900/12-intro-pipeline.png) | ![Brand](docs/screenshots/v2/1440x900/13-intro-brand.png) |
+
+All screenshots come from `npm run screenshots` against a production build with the real local
+model. More sizes are in [`docs/screenshots/v2`](docs/screenshots/v2); v1 is in `docs/screenshots/v1`.
+
+## PS2 and Track 1 at a glance
+
+PS2 names "areas *such as* resource optimization, security, energy management and student services".
+We state our coverage of each area without claiming that every area is mandatory:
+
+| Area / capability | In this prototype |
+|---|---|
+| Student services | **Implemented** for one scenario (event participation), end to end |
+| Security | **Limited**: application and academic-data security (isolation, consent, audit), not physical campus security |
+| Resource optimization | **Limited**: one student's time and attendance, not rooms, labs or staff |
+| Energy management | **Not implemented** |
+| Reasoning · Planning · Tool usage · Task execution | Hybrid (the model routes, rules decide) · implemented · implemented · local tasks only |
+
+Details and evidence:
+
+- [`docs/ROUND2_PS2_COMPLIANCE.md`](docs/ROUND2_PS2_COMPLIANCE.md)
+- [`docs/round2/`](docs/round2/README.md): matrix, test results, live-model routing
+- [compliance report PDF](docs/report/CampusPilot_PS2_Implementation_Compliance_Report.pdf)
+
+## Run it
+
+Requires Node.js **≥ 22.13** (built-in `node:sqlite`; developed and tested on Node 24).
+
+```bash
+npm install
+npm run demo         # production build + start on http://localhost:3000 (use for the showcase)
+npm run dev          # development server
+```
+
+**Local AI (optional):** install [Ollama](https://ollama.com) and `ollama pull llama3.2:1b`
+(already installed on the presentation Mac). Without it, everything still works and the Ask panel
+is labelled "Offline · keyword fallback". Configuration: `.env.example`, details in
+`docs/AI_ARCHITECTURE.md`.
+
+1. Open http://localhost:3000 → **Open Maya's sample workspace**.
+2. Press **P** for presentation mode (sidebar hides, type scales up, and a compact Home · Decisions ·
+   Activity · Security navigation appears in the top bar).
+3. Reset between rehearsals: **Decisions → Controlled demo → Reset demo** (or `npm run db:reset`
+   with the server stopped).
+
+**Offline fallback (no Node at all):** open `prototype/index.html` — the untouched v1 static
+prototype from the build kit.
+
+## What is real
+
+| | Capability |
+|---|---|
+| **Real local-model inference** | `llama3.2:1b` (Ollama 0.35.1, loopback) interprets the student's question into one of seven intents (six answerable plus `unsupported`) and selects read-only tools via schema-constrained JSON; recorded as `mode=local_llm` with the model name in the trace. Verified by `npm run ai:smoke` (`reports/ai-smoke.json`) and `e2e/ai-live.spec.ts` on the presentation Mac. |
+| **Deterministic backend (verified by tests)** | Attendance projections 74.2 / 77.4 / 80.6% · conflicts · registration status · conditional recommendation · per-student isolation over real HTTP · revision-pinned idempotent approvals · local task execution with read-back · source change → replan → approval invalidated · scoped tool gateway · WCAG 2.1 A/AA automated scans · 320–1440 px layouts |
+| **Implemented, not independently verified** | Security headers in a real deployment · browsers other than Chromium · manual screen-reader use · routing quality beyond the tested questions |
+| **Synthetic demo data** | Student, second test profile, event, academic records, class timetable (Oct 26–30), 75% policy · the deadline change (controlled demo) · sign-in (sample login) |
+| **Not implemented** | VTOP / ERP integration · cloud AI models · model-written answers (off: unreliable at 1B) · on-duty approval or eligibility verification · institutional SSO · rate limiting · energy management · institution-wide operations (rooms, labs, staff) · physical campus security |
+
+## Routes
+
+| Route | Label | What it shows |
+|---|---|---|
+| `/overview` | Home | Derived summary, next decision, what needs attention, timeline, attendance vs the sample threshold, server tasks. |
+| `/decisions` | Decisions | **Ask your local agent** (model status, question, interpreted intent, records checked — by the model or added by the server — findings, unknowns, sources, trace link) · guided mission · comparison table · conditional recommendation · action plan and approval · a rail separating plan approval from on-duty permission and eligibility · the three-step replanning update. |
+| `/agents` | Activity | Recorded runs: question runs show the model, its decision and each tool call (requested by the model or the server); guided runs are labelled deterministic. |
+| `/trust` | Security | Permissions overview (incl. the local-AI boundary), live access check (real 403s), audit log, test evidence, what is real. |
+
+`/overview?intro=1` plays the presentation opening over Home. Press Esc to skip it.
+Visual review notes: `docs/VISUAL_REVIEW.md`.
 
 ## Architecture
 
 ```
-Browser (React client components, polling every 5 s)
-   │  same-origin JSON, httpOnly SameSite=Strict session cookie
+Browser (React; server-rendered first paint; 5 s polling)
+   │  same-origin JSON · httpOnly SameSite=Strict session cookie
    ▼
-Next.js route handlers (app/api/**)  ── withStudent(): student id ONLY from the session
-   │
-   ├─ Mission orchestrator (lib/agents/orchestrator.ts) — deterministic workflow
-   │     └─ invokeTool() gateway (lib/agents/tools.ts): role allowlist · strict zod schemas
-   │          · call budget · server-injected identity · trace event per call
-   │            academic: get_my_courses / get_my_attendance / get_my_commitments / get_applicable_policy
-   │            opportunity: get_event / verify_event_rules (description = quarantined data)
-   │            evaluator: calculate_attendance / calculate_conflicts   (lib/core, pure)
-   │            planner: enumerate_options / propose_task_drafts        (side-effect free)
-   ├─ Approval gateway (lib/server/services.ts) — the only code that executes actions
-   ├─ Source simulator → SOURCE_UPDATED → onSourceUpdated() replanner (same transaction)
-   └─ SQLite via node:sqlite (lib/server/db.ts, WAL, BEGIN IMMEDIATE transactions)
-```
-
-```
-app/(product)/{overview,decisions,agents,trust}/page.tsx   screens (server layout checks the session)
-app/api/**                                                route handlers
-components/*.tsx                                          UI (hand-written CSS in app/globals.css)
-lib/core/{attendance,planner,diff,time}.ts                deterministic engine (no I/O)
-lib/agents/{tools,orchestrator}.ts                        scoped tools + workflow
-lib/server/{db,seed,repo,session,services,workspace,http,app}.ts
-tests/*.test.ts                                           Vitest (engine, backend, agents, prototype)
-e2e/demo.spec.ts                                          Playwright (prod build, real HTTP)
-prototype/                                                untouched offline fallback
+Next.js route handlers ── student id only from the session
+   ├─ Local AI (lib/ai): scope check → llama3.2:1b routing (JSON schema) → validated tool plan
+   │      └─ Ollama on 127.0.0.1 (server-side only)
+   ├─ Orchestrator (lib/agents/orchestrator.ts): fixed guided workflow
+   ├─ invokeTool() gateway (lib/agents/tools.ts): role allowlists · strict schemas · call budget ·
+   │      server-injected identity · one trace event per call
+   ├─ Engine (lib/core): attendance, conflicts, registration, options, ranking, diff
+   ├─ Approval gateway (lib/server/services.ts): the only code that executes actions
+   ├─ Source simulator → SOURCE_UPDATED → replan dependent missions
+   └─ SQLite (node:sqlite, WAL, schema v3 with migrations)
 ```
 
 ### API
 
 | Method & path | Notes |
 |---|---|
-| `POST /api/session/sample` | Demo mode only. No identity input. Sets `cp_session`. |
-| `POST /api/session/logout` | Deletes the session. |
+| `POST /api/ai/ask` `{question}` | Local AI. Session owner only; 429 if a question is already running. |
+| `GET /api/ai/status`, `POST /api/ai/warmup` | Model availability (`local_model_ready` / `_unavailable` / `_error`) and preload. |
+| `POST /api/session/sample`, `POST /api/session/logout` | Demo sign-in (no identity input) / sign-out. |
 | `GET /api/workspace`, `GET /api/students/me` | Session owner's snapshot. |
 | `GET /api/courses/:id` | Own course or uniform 403. |
-| `POST /api/mission/evaluate` `{goal, opportunityId}` | Runs the orchestrator; owner from session; strict body (a `studentId` field → 400). |
-| `GET /api/mission/:id` | Owner only (403 otherwise). |
-| `POST /api/mission/:id/approve` `{revision, optionId, actionIds, challenge, idempotencyKey}` | 409 `STALE_REVISION`, 403 `CONSENT_REQUIRED` / `FORBIDDEN_ACTION` / `FORBIDDEN`. |
-| `POST /api/mission/:id/recalculate` | Re-runs the workflow; new revision only if the plan changed. |
+| `POST /api/mission/evaluate` `{missionType: "event_participation", opportunityId}` | Guided mission. |
+| `GET /api/mission/:id`, `POST /api/mission/:id/approve`, `POST /api/mission/:id/recalculate` | Owner only; approvals: 409 stale/superseded/reused key, 422 infeasible, 403 consent/forged/foreign. |
 | `GET /api/tasks`, `GET /api/trace/:runId` | Owner only. |
-| `POST /api/demo/source-change` `{event}` | Demo only. `advance_assignment_deadline` / `restore_assignment_deadline`. |
-| `POST /api/demo/reset` | Demo only. Resets the session owner's scenario (audit log kept). |
-| `GET /api/test-report` | Summary of the last recorded `npm run test:report` (`reports/vitest.json`). |
+| `POST /api/demo/source-change`, `POST /api/demo/reset` | Demo mode only. |
+| `GET /api/test-report` | Last recorded `npm run test:report`. |
 
-## Security controls (and how they are verified)
+## Security controls
 
 | Threat | Control | Verified by |
 |---|---|---|
-| Cross-student read | Owner filter on every query; identity from session only; uniform 403 for foreign/unknown IDs; denials audited | `tests/backend.test.ts`, `e2e` "cross-user isolation over real HTTP", trust-center probe |
-| Cross-student write | Approval checks mission owner inside the transaction | backend test "approving Student B's plan → 403 and no mutation" |
-| Stale approval | Revision pinned; atomic check under `BEGIN IMMEDIATE` | 409 tests (Vitest + e2e) |
-| Unconsented / forged approval | Per-revision challenge; action IDs must belong to that revision + option | backend tests |
-| Duplicate execution | Idempotency key (unique per student) + active-approval replay + task upsert by key | backend + e2e "no duplicate tasks" |
-| Tool misuse / prompt injection | Role allowlists, strict schemas (smuggled `studentId` rejected), execution not exposed to agents, notice text quarantined | `tests/agents.test.ts` (hostile notice; simulated malicious tool calls) |
-| CSRF | SameSite=Strict + same-origin + JSON-only mutations | backend tests (403 / 415) |
-| Demo-route misuse | `CAMPUSPILOT_DEMO_MODE=off` → 404 | backend test |
+| Cross-student read/write | Owner filter everywhere; identity only from the session; uniform 403; audited | backend tests, real-HTTP e2e, live check in Security |
+| Model misuse / prompt injection | Model sees only the question; reply limited to intent + tool names; strict parse (extra fields rejected); read-only tool allowlist; server sets all arguments | `tests/ai.test.ts`, hostile questions in `ai:smoke` against the real model |
+| Stale or replayed approval | Revision + consent checked before any idempotent replay; superseded approvals never reinstated | backend regression tests |
+| Infeasible approval | Options with a hard violation cannot be approved (422) | `tests/registration.test.ts` |
+| Oversized / cross-site input | 16 KB cap on the actual body stream (not just Content-Length), same-origin JSON, `Sec-Fetch-Site` check, ID format check | backend tests |
+| Runaway inference | Loopback-only runtime URL, timeouts, ≤3 model calls, one question at a time | `tests/ai.test.ts` |
 
-Prompt injection against a live model is **untested** (there is no model). We don't claim it is solved.
+Prompt injection is not "solved": the guarantee is that every tool call is scoped by the server,
+whatever the model outputs. Sample login is not production identity.
 
 ## Tests
 
 ```bash
-npm test             # Vitest: engine, backend route handlers, agent guardrails, prototype checksum
-npm run test:report  # same, and records reports/vitest.json (shown in the Trust center)
-npm run test:e2e     # Playwright: builds, starts a prod server on :3100 with a fresh DB, walks the demo
 npm run typecheck
+npm test                 # Vitest (CI): engine, backend routes, agents, AI (mocked model), presentation
+npm run build
+npm run test:e2e         # Playwright on a production build (local model switched off)
+npm run ai:smoke         # REAL model over HTTP against a running app (BASE=http://localhost:3000)
+AI_LIVE=1 npx playwright test e2e/ai-live.spec.ts   # REAL model through the browser
+npm run screenshots      # six viewport sizes; uses the real model if running
 ```
 
-Last observed results (23 Oct 2026): **66/66 Vitest**, **13/13 Playwright**, `tsc` clean,
-`next build` succeeded. See the final hand-off notes in `PITCH_NOTES.md` for the click path.
+Results observed on 23 Oct 2026 on the presentation Mac, with pass, fail and skip counts and the live-model
+routing table, are in [`docs/round2/FINAL_TEST_RESULTS.md`](docs/round2/FINAL_TEST_RESULTS.md).
+The real-model smoke run is in `reports/ai-smoke.json`.
 
 ## Accessibility
 
-Semantic buttons and links; `aria-pressed` on option cards and the presentation toggle;
-`aria-current` on navigation; dialog with `aria-modal`, Escape to close and focus moved
-inside; toasts in an `aria-live` region; visible focus rings; status is never conveyed by
-colour alone (icons + text); `prefers-reduced-motion` respected; 390 px layout without
-horizontal scroll (asserted in e2e).
+Landmarks and a skip link; semantic tables; labelled inputs; `aria-pressed`/`aria-current`;
+accessible dialog (focus in, trapped, restored); status never conveyed by colour alone; 12 px
+minimum text; WCAG AA contrast (axe-core scans pass on every screen at 1440 and 390 px);
+`prefers-reduced-motion`; presentation mode scales all rem-based sizes.
+
+## Documentation
+
+- [`docs/AI_ARCHITECTURE.md`](docs/AI_ARCHITECTURE.md): how the local model is used and constrained
+- [`docs/ROUND2_PS2_COMPLIANCE.md`](docs/ROUND2_PS2_COMPLIANCE.md) and [`docs/round2/`](docs/round2/README.md): coverage, tests and evidence
+- [`docs/report/`](docs/report/): PS2 implementation and compliance report (PDF and Markdown)
+- [`PITCH_NOTES.md`](PITCH_NOTES.md): 3-minute demo script
 
 ## Limitations
 
-- The scenario clock is fixed at the seed's `dataAsOf` (22 Oct 2026, 9:00 PM IST) so the demo is
-  reproducible; real event timestamps (approvals, audit, source updates) use the actual time.
-- Suggested work blocks are evening slots chosen by a simple rule. No timetable source is
-  connected, so they are marked "suggested" and listed as an unknown.
-- The source-change simulator only edits the seed assignment record of the signed-in student.
-- One process, one SQLite file. Suitable for a local demo, not multi-instance deployment.
-- No live LLM. Adding one means a model adapter that proposes tool calls *through*
-  `invokeTool()`, with output validation and a deterministic fallback.
+- The local model routes six kinds of question about one event; off-topic questions are refused.
+  It mis-routes some paraphrases; the server still gathers the evidence each intent needs.
+- One supported guided mission (event participation); the demo assumes the student has not
+  registered for the event yet.
+- Planning uses the seed's scenario clock (22 Oct 2026, 9:00 PM IST); real timestamps are used for
+  approvals, audit, traces and source updates.
+- Suggested work blocks are proposals; the class timetable is synthetic sample data (not VTOP), and the missed-class counts agree with it (unit-tested).
+- One process, one SQLite file, CPU inference — a local demo, not a deployment.

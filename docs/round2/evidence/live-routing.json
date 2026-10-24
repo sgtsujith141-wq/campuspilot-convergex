@@ -1,0 +1,311 @@
+{
+  "at": "2026-10-23T08:03:52.724Z",
+  "base": "http://localhost:3300",
+  "status": {
+    "status": "local_model_ready",
+    "provider": "ollama",
+    "model": "llama3.2:1b",
+    "details": {
+      "parameterSize": "1.2B",
+      "quantization": "Q8_0",
+      "family": "llama"
+    },
+    "checkedAt": "2026-10-23T08:03:24.232Z"
+  },
+  "rows": [
+    {
+      "q": "Which classes clash with my hackathon?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "class_clashes",
+      "correct": true,
+      "modelTools": [
+        "get_my_timetable",
+        "get_event"
+      ],
+      "serverTools": [],
+      "attempts": 1,
+      "modelMs": 3000,
+      "wallMs": 3019,
+      "headline": "Attending the full event clashes with three classes; selected sessions clash with one.",
+      "nextStep": "Selected sessions (Thu, Oct 29, 10:00 AM–1:00 PM) miss only Network Security lecture (Thu, Oct 29 · 11:00 AM–12:00 PM). Compare the options to see the attendance impact, and confirm the session times with the organisers."
+    },
+    {
+      "q": "Will the hackathon make me miss any lectures or labs?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "class_clashes",
+      "correct": true,
+      "modelTools": [
+        "get_my_timetable",
+        "get_applicable_policy"
+      ],
+      "serverTools": [
+        "get_event"
+      ],
+      "attempts": 1,
+      "modelMs": 1727,
+      "wallMs": 1737,
+      "headline": "Attending the full event clashes with three classes; selected sessions clash with one.",
+      "nextStep": "Selected sessions (Thu, Oct 29, 10:00 AM–1:00 PM) miss only Network Security lecture (Thu, Oct 29 · 11:00 AM–12:00 PM). Compare the options to see the attendance impact, and confirm the session times with the organisers."
+    },
+    {
+      "q": "Can I attend without falling below minimum attendance?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "attendance_risk",
+      "correct": true,
+      "modelTools": [
+        "get_my_attendance"
+      ],
+      "serverTools": [
+        "get_my_courses",
+        "get_applicable_policy"
+      ],
+      "attempts": 1,
+      "modelMs": 1473,
+      "wallMs": 1484,
+      "headline": "Network Security is your biggest attendance risk.",
+      "nextStep": "Selected sessions keep this course above the sample threshold. Compare the options before deciding — the threshold is an example, not an official rule."
+    },
+    {
+      "q": "Will joining the sprint push my attendance under 75%?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "attendance_risk",
+      "correct": true,
+      "modelTools": [
+        "get_my_attendance",
+        "get_my_commitments"
+      ],
+      "serverTools": [
+        "get_my_courses",
+        "get_applicable_policy"
+      ],
+      "attempts": 1,
+      "modelMs": 1307,
+      "wallMs": 1316,
+      "headline": "Network Security is your biggest attendance risk.",
+      "nextStep": "Selected sessions keep this course above the sample threshold. Compare the options before deciding — the threshold is an example, not an official rule."
+    },
+    {
+      "q": "What deadlines conflict with the event?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "deadline_conflicts",
+      "correct": true,
+      "modelTools": [
+        "get_my_commitments",
+        "get_my_timetable"
+      ],
+      "serverTools": [
+        "get_event"
+      ],
+      "attempts": 1,
+      "modelMs": 1716,
+      "wallMs": 1725,
+      "headline": "You have two academic commitments to plan around.",
+      "nextStep": "Review the selected-session plan. Full participation also affects your sample attendance projection. CampusPilot can prepare local tasks, but event eligibility and institutional permission remain unverified."
+    },
+    {
+      "q": "Is any assignment due during CyberForge?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "attendance_risk",
+      "correct": false,
+      "modelTools": [
+        "get_my_attendance",
+        "get_my_courses",
+        "get_applicable_policy",
+        "get_my_commitments",
+        "get_my_timetable",
+        "get_event",
+        "verify_event_rules"
+      ],
+      "serverTools": [],
+      "attempts": 1,
+      "modelMs": 2447,
+      "wallMs": 2472,
+      "headline": "Network Security is your biggest attendance risk.",
+      "nextStep": "Selected sessions keep this course above the sample threshold. Compare the options before deciding — the threshold is an example, not an official rule."
+    },
+    {
+      "q": "Should I attend the whole event or selected sessions?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "participation_tradeoffs",
+      "correct": true,
+      "modelTools": [
+        "get_my_attendance",
+        "get_my_commitments",
+        "get_my_timetable"
+      ],
+      "serverTools": [
+        "get_my_courses",
+        "get_applicable_policy",
+        "get_event"
+      ],
+      "attempts": 1,
+      "modelMs": 1634,
+      "wallMs": 1646,
+      "headline": "Recommended (conditionally): Attend selected sessions.",
+      "nextStep": "Compare the options in detail, then approve the plan you choose."
+    },
+    {
+      "q": "Is it better to go for both days or only part of it?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "participation_tradeoffs",
+      "correct": true,
+      "modelTools": [
+        "get_my_attendance",
+        "get_my_commitments",
+        "get_my_timetable"
+      ],
+      "serverTools": [
+        "get_my_courses",
+        "get_applicable_policy",
+        "get_event"
+      ],
+      "attempts": 1,
+      "modelMs": 1686,
+      "wallMs": 1696,
+      "headline": "Recommended (conditionally): Attend selected sessions.",
+      "nextStep": "Compare the options in detail, then approve the plan you choose."
+    },
+    {
+      "q": "Why are selected sessions recommended?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "participation_tradeoffs",
+      "correct": true,
+      "modelTools": [
+        "get_my_attendance",
+        "get_my_commitments",
+        "get_my_timetable"
+      ],
+      "serverTools": [
+        "get_my_courses",
+        "get_applicable_policy",
+        "get_event"
+      ],
+      "attempts": 1,
+      "modelMs": 2116,
+      "wallMs": 2124,
+      "headline": "Recommended (conditionally): Attend selected sessions.",
+      "nextStep": "Compare the options in detail, then approve the plan you choose."
+    },
+    {
+      "q": "Explain the reason for the recommendation.",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "explain_recommendation",
+      "correct": true,
+      "modelTools": [
+        "get_my_attendance",
+        "get_my_courses",
+        "get_applicable_policy",
+        "get_my_commitments",
+        "get_my_timetable",
+        "get_event",
+        "verify_event_rules"
+      ],
+      "serverTools": [],
+      "attempts": 1,
+      "modelMs": 2621,
+      "wallMs": 2630,
+      "headline": "CampusPilot recommends: Attend selected sessions — conditionally.",
+      "nextStep": "Compare the options, then approve the plan you choose. Approval only creates local tasks."
+    },
+    {
+      "q": "What do I need to verify before participating?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "verification",
+      "correct": true,
+      "modelTools": [
+        "get_applicable_policy",
+        "get_my_commitments",
+        "get_my_timetable"
+      ],
+      "serverTools": [
+        "get_event",
+        "verify_event_rules"
+      ],
+      "attempts": 1,
+      "modelMs": 1902,
+      "wallMs": 1922,
+      "headline": "Confirm these before you participate.",
+      "nextStep": "Confirm eligibility and on-duty approval with the organisers and your institution before registration closes Oct 27, 11:59 PM. CampusPilot can add this as a task in your plan, but cannot request or grant either."
+    },
+    {
+      "q": "Do I need on-duty approval to join?",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "verification",
+      "correct": true,
+      "modelTools": [
+        "get_applicable_policy",
+        "verify_event_rules"
+      ],
+      "serverTools": [
+        "get_event"
+      ],
+      "attempts": 1,
+      "modelMs": 1241,
+      "wallMs": 1248,
+      "headline": "Confirm these before you participate.",
+      "nextStep": "Confirm eligibility and on-duty approval with the organisers and your institution before registration closes Oct 27, 11:59 PM. CampusPilot can add this as a task in your plan, but cannot request or grant either."
+    },
+    {
+      "q": "Explain what happens if my assignment deadline changes.",
+      "http": 200,
+      "mode": "local_llm",
+      "source": "model",
+      "intent": "deadline_conflicts",
+      "correct": true,
+      "modelTools": [
+        "get_my_commitments",
+        "get_my_attendance",
+        "get_my_courses",
+        "get_applicable_policy",
+        "get_my_timetable",
+        "get_event",
+        "verify_event_rules"
+      ],
+      "serverTools": [],
+      "attempts": 1,
+      "modelMs": 3163,
+      "wallMs": 3171,
+      "headline": "You have two academic commitments to plan around.",
+      "nextStep": "Review the selected-session plan. Full participation also affects your sample attendance projection. CampusPilot can prepare local tasks, but event eligibility and institutional permission remain unverified."
+    },
+    {
+      "q": "What is the canteen menu today?",
+      "http": 200,
+      "mode": "deterministic",
+      "source": "scope_check",
+      "intent": "unsupported",
+      "correct": true,
+      "modelTools": [],
+      "serverTools": [],
+      "attempts": 0,
+      "modelMs": null,
+      "wallMs": 4,
+      "headline": null,
+      "nextStep": null
+    }
+  ]
+}

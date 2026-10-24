@@ -1,0 +1,24 @@
+reset HTTP 200
+intro visible with ?intro=1
+intro skipped with Escape; Home shown
+01-home.jpg captured
+presentation nav -> Decisions ok
+presentation nav -> Activity ok
+presentation nav -> Security ok
+presentation nav -> Home ok
+00-presentation-nav.jpg captured; P toggled back
+ai status: Local AI · llama3.2:1b (1.2B)
+02-ask-class-clash.jpg captured
+03-timetable.jpg captured
+04-compare.jpg captured
+04b-recommendation.jpg captured
+05a-approved.jpg captured
+05-replan.jpg captured
+tasks read back from server: 3; statuses needs_review
+mission revision after replan: 2
+06-activity-ai-run.jpg captured
+06b-activity-replan.jpg captured
+07-security-probe.jpg captured
+07b-audit.jpg captured
+first probe 403 seen: /api/courses/oth_course_ns
+final demo reset HTTP 200; mission after reset: none

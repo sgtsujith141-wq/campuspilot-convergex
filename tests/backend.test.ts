@@ -21,7 +21,7 @@ const workspace = await import("@/app/api/workspace/route");
 const db = getAppDb();
 let maya = "";
 let missionId = "";
-const GOAL = "Can I attend CyberForge Sprint on Oct 29–30? Check attendance, assessments, assignments, and prepare a realistic plan.";
+const MISSION = { missionType: "event_participation", opportunityId: "opp_cyberforge" };
 
 async function getMission() {
   const res = await mission.GET(req(`/api/mission/${missionId}`, { token: maya }), params({ id: missionId }));
@@ -30,7 +30,9 @@ async function getMission() {
 async function approvePlan(body: Record<string, unknown>, token = maya, id = missionId) {
   return approve.POST(req(`/api/mission/${id}/approve`, { method: "POST", token, body }), params({ id }));
 }
-const taskCount = () => (one<{ n: number }>(db, "SELECT COUNT(*) AS n FROM tasks WHERE student_id = ?", MAYA_ID)!.n);
+/** Non-superseded tasks; the UNIQUE(student, mission, task_key) constraint rules out duplicates. */
+const taskCount = () => (one<{ n: number }>(db, "SELECT COUNT(*) AS n FROM tasks WHERE student_id = ? AND status != 'superseded'", MAYA_ID)!.n);
+const approvalsFor = (revision: number) => all<{ id: string; status: string; option_id: string }>(db, "SELECT id, status, option_id FROM approvals WHERE student_id = ? AND revision = ? ORDER BY created_at", MAYA_ID, revision);
 const otherState = () => ({
   mission: one(db, "SELECT revision, status FROM missions WHERE id = ?", OTHER_FIXTURE.missionId),
   approvals: one<{ n: number }>(db, "SELECT COUNT(*) AS n FROM approvals WHERE student_id = ?", OTHER_FIXTURE.studentId)!.n,
@@ -61,10 +63,12 @@ describe("session + mission evaluation", () => {
   });
 
   it("evaluates the mission: revision 1, seed numbers, conditional partial recommendation", async () => {
-    const res = await evaluate.POST(req("/api/mission/evaluate", { method: "POST", token: maya, body: { goal: GOAL, opportunityId: "opp_cyberforge" } }));
+    const res = await evaluate.POST(req("/api/mission/evaluate", { method: "POST", token: maya, body: MISSION }));
     expect(res.status).toBe(201);
     const body = await res.json();
     missionId = body.mission.id;
+    expect(body.mission.missionType).toBe("event_participation");
+    expect(body.mission.goal).toMatch(/^Can I attend CyberForge Sprint\?/);
     expect(body.mission.revision).toBe(1);
     expect(body.mode).toBe("deterministic");
     const ns = (o: string) => body.mission.result.options.find((x: { id: string }) => x.id === o).projections.find((p: { courseId: string }) => p.courseId === "course_ns").percent;
@@ -77,8 +81,15 @@ describe("session + mission evaluation", () => {
   });
 
   it("evaluate cannot be pointed at another student via the body", async () => {
-    const res = await evaluate.POST(req("/api/mission/evaluate", { method: "POST", token: maya, body: { goal: GOAL, opportunityId: "opp_cyberforge", studentId: OTHER_FIXTURE.studentId } }));
+    const res = await evaluate.POST(req("/api/mission/evaluate", { method: "POST", token: maya, body: { ...MISSION, studentId: OTHER_FIXTURE.studentId } }));
     expect(res.status).toBe(400);
+  });
+
+  it("free-text goals are not accepted: the guided workflow supports one mission type", async () => {
+    const freeText = await evaluate.POST(req("/api/mission/evaluate", { method: "POST", token: maya, body: { goal: "Book me a flight to Goa", opportunityId: "opp_cyberforge" } }));
+    expect(freeText.status).toBe(400);
+    const unsupported = await evaluate.POST(req("/api/mission/evaluate", { method: "POST", token: maya, body: { missionType: "book_travel", opportunityId: "opp_cyberforge" } }));
+    expect(unsupported.status).toBe(400);
   });
 
   it("records a real trace run from executed tool calls (mode=deterministic, no model)", () => {
@@ -222,6 +233,51 @@ describe("source change → reactive replan (no new prompt)", () => {
     expect(db1).toMatchObject({ origin_revision: 2, status: "active" });
     expect(db1.detail).toMatch(/Oct 27/);
   });
+  it("REGRESSION: an exact replay of the invalidated revision-1 approval is refused, not reported as active", async () => {
+    const before = all(db, "SELECT id, status, origin_revision, approval_id FROM tasks WHERE student_id = ? ORDER BY id", MAYA_ID);
+    // Same key, revision, option, actions and challenge as the original revision-1 approval.
+    const res = await approvePlan({ revision: 1, optionId: "partial", actionIds: r1Actions, challenge: r1Challenge, idempotencyKey: "approve-r1-0001" });
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("STALE_REVISION");
+    expect(approvalsFor(1).map((a) => a.status)).toEqual(["invalidated"]);
+    expect(all(db, "SELECT id, status, origin_revision, approval_id FROM tasks WHERE student_id = ? ORDER BY id", MAYA_ID)).toEqual(before);
+  });
+
+  it("exact sequential retries of the active approval are no-ops (one approval, no new tasks)", async () => {
+    const m = await getMission();
+    const body = { revision: 2, optionId: "partial", actionIds: m.drafts.partial.map((d: { id: string }) => d.id), challenge: m.challenge, idempotencyKey: "approve-r2-0001" };
+    const snapshot = all(db, "SELECT * FROM tasks WHERE student_id = ? ORDER BY id", MAYA_ID);
+    for (let i = 0; i < 3; i++) {
+      const res = await approvePlan(body);
+      expect(res.status).toBe(200);
+      expect((await res.json()).replayed).toBe(true);
+    }
+    expect(approvalsFor(2)).toHaveLength(1);
+    expect(all(db, "SELECT * FROM tasks WHERE student_id = ? ORDER BY id", MAYA_ID)).toEqual(snapshot);
+  });
+
+  it("a reused key with a different option at the same revision is refused", async () => {
+    const m = await getMission();
+    const res = await approvePlan({ revision: 2, optionId: "defer", actionIds: m.drafts.defer.map((d: { id: string }) => d.id), challenge: m.challenge, idempotencyKey: "approve-r2-0001" });
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("IDEMPOTENCY_KEY_REUSED");
+  });
+
+  it("a replaced approval is never reinstated by retrying its key", async () => {
+    const m = await getMission();
+    const defer = await approvePlan({ revision: 2, optionId: "defer", actionIds: m.drafts.defer.map((d: { id: string }) => d.id), challenge: m.challenge, idempotencyKey: "approve-r2-defer" });
+    expect(defer.status).toBe(200);
+    const retry = await approvePlan({ revision: 2, optionId: "partial", actionIds: m.drafts.partial.map((d: { id: string }) => d.id), challenge: m.challenge, idempotencyKey: "approve-r2-0001" });
+    expect(retry.status).toBe(409);
+    expect((await retry.json()).error).toBe("APPROVAL_SUPERSEDED");
+    expect(approvalsFor(2).filter((a) => a.status === "active").map((a) => a.option_id)).toEqual(["defer"]);
+    // Switching back is an explicit new approval, not a replay.
+    const back = await approvePlan({ revision: 2, optionId: "partial", actionIds: m.drafts.partial.map((d: { id: string }) => d.id), challenge: m.challenge, idempotencyKey: "approve-r2-0002" });
+    expect(back.status).toBe(200);
+    expect(approvalsFor(2).filter((a) => a.status === "active").map((a) => a.option_id)).toEqual(["partial"]);
+    expect(taskCount()).toBe(3);
+  });
+
   it("re-using an idempotency key for a different revision is refused", async () => {
     const m = await getMission();
     const res = await approvePlan({ revision: 2, optionId: "defer", actionIds: m.drafts.defer.map((d: { id: string }) => d.id), challenge: m.challenge, idempotencyKey: "approve-r1-0001" });
@@ -244,6 +300,33 @@ describe("source change → reactive replan (no new prompt)", () => {
 });
 
 describe("request hygiene", () => {
+  it("a browser-flagged cross-site mutation (Sec-Fetch-Site) → 403 even without an Origin header", async () => {
+    const r = req("/api/demo/source-change", { method: "POST", token: maya, body: { event: "advance_assignment_deadline" }, origin: null });
+    r.headers.set("sec-fetch-site", "cross-site");
+    expect((await sourceChange.POST(r)).status).toBe(403);
+  });
+  it("oversized bodies without a Content-Length header are still cut off at the limit → 413", async () => {
+    const big = JSON.stringify({ event: "advance_assignment_deadline", pad: "x".repeat(40 * 1024) });
+    const r = req("/api/demo/source-change", { method: "POST", token: maya, body: big });
+    r.headers.delete("content-length");
+    expect(r.headers.get("content-length")).toBeNull();
+    const res = await sourceChange.POST(r);
+    expect(res.status).toBe(413);
+    expect((await getMission()).revision).toBe(3); // nothing changed
+  });
+  it("oversized bodies → 413", async () => {
+    const r = req("/api/demo/source-change", { method: "POST", token: maya, body: { event: "advance_assignment_deadline" } });
+    r.headers.set("content-length", String(64 * 1024));
+    expect((await sourceChange.POST(r)).status).toBe(413);
+  });
+  it("malformed IDs get the uniform 403 and are not echoed into the audit log", async () => {
+    const weird = "x".repeat(300) + "'; DROP TABLE missions; --";
+    const res = await courses.GET(req(`/api/courses/${encodeURIComponent(weird)}`, { token: maya }), params({ id: weird }));
+    expect(res.status).toBe(403);
+    const last = one<{ target: string }>(db, "SELECT target FROM audit_log WHERE student_id = ? ORDER BY rowid DESC LIMIT 1", MAYA_ID)!;
+    expect(last.target).toBe("(malformed id)");
+  });
+
   it("cross-origin mutation → 403", async () => {
     const res = await sourceChange.POST(req("/api/demo/source-change", { method: "POST", token: maya, body: { event: "advance_assignment_deadline" }, origin: "https://evil.example" }));
     expect(res.status).toBe(403);

@@ -2,7 +2,7 @@ import "server-only";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { seedDatabase } from "./seed";
+import { seedDatabase, seedMissingSources } from "./seed";
 
 export type Db = DatabaseSync;
 export type Row = Record<string, unknown>;
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS domain_events (
 );
 CREATE TABLE IF NOT EXISTS missions (
   id TEXT PRIMARY KEY, student_id TEXT NOT NULL REFERENCES students(id), goal TEXT NOT NULL,
-  opportunity_id TEXT NOT NULL, revision INTEGER NOT NULL, status TEXT NOT NULL,
+  mission_type TEXT NOT NULL DEFAULT 'event_participation', opportunity_id TEXT NOT NULL, revision INTEGER NOT NULL, status TEXT NOT NULL,
   created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_missions_student ON missions(student_id);
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS trace_runs (
 CREATE TABLE IF NOT EXISTS trace_events (
   id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES trace_runs(id), student_id TEXT NOT NULL, seq INTEGER NOT NULL,
   actor TEXT NOT NULL, tool TEXT, started_at TEXT NOT NULL, completed_at TEXT, duration_ms REAL, status TEXT NOT NULL,
-  mode TEXT NOT NULL, summary TEXT NOT NULL, args_json TEXT, evidence_refs_json TEXT NOT NULL, error TEXT
+  mode TEXT NOT NULL, summary TEXT NOT NULL, args_json TEXT, evidence_refs_json TEXT NOT NULL, error TEXT, requested_by TEXT
 );
 CREATE TABLE IF NOT EXISTS audit_log (
   id TEXT PRIMARY KEY, student_id TEXT, action TEXT NOT NULL, target TEXT, outcome TEXT NOT NULL,
@@ -86,14 +86,41 @@ export function openDatabase(file: string): Db {
   const db = new DatabaseSync(file);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;");
   db.exec(SCHEMA);
+  migrate(db);
   const seeded = db.prepare("SELECT value FROM meta WHERE key = 'seeded'").get();
   if (!seeded) {
     tx(db, () => {
       seedDatabase(db);
       db.prepare("INSERT INTO meta (key, value) VALUES ('seeded', ?)").run(new Date().toISOString());
     });
+  } else {
+    tx(db, () => seedMissingSources(db)); // e.g. the timetable record added after v3
   }
   return db;
+}
+
+export const SCHEMA_VERSION = 3;
+
+/**
+ * v2: missions carry a mission_type (guided workflow), and plan results gained registration
+ * status, freshness and absence summaries. Plans computed by the v1 engine are demo data that
+ * cannot be shown faithfully by the new UI, so they are cleared; source records, sessions and
+ * the audit log are kept. Students simply evaluate again.
+ */
+/** v3 (additive, no data loss): trace_events.requested_by records who asked for a tool call. */
+function migrate(db: Db) {
+  const row = db.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as { value: string } | undefined;
+  const version = row ? Number(row.value) : 1;
+  if (version >= SCHEMA_VERSION) return;
+  const colsOf = (table: string) => (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name);
+  tx(db, () => {
+    if (version < 2) {
+      if (!colsOf("missions").includes("mission_type")) db.exec("ALTER TABLE missions ADD COLUMN mission_type TEXT NOT NULL DEFAULT 'event_participation'");
+      for (const t of ["trace_events", "trace_runs", "tasks", "approvals", "action_drafts", "plan_dependencies", "mission_revisions", "missions"]) db.exec(`DELETE FROM ${t}`);
+    }
+    if (!colsOf("trace_events").includes("requested_by")) db.exec("ALTER TABLE trace_events ADD COLUMN requested_by TEXT");
+    db.prepare("INSERT INTO meta (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(String(SCHEMA_VERSION));
+  });
 }
 
 const globalForDb = globalThis as unknown as { __campuspilotDb?: { file: string; db: Db } };

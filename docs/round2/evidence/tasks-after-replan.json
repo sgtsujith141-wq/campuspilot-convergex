@@ -1,0 +1,43 @@
+{
+  "tasks": [
+    {
+      "id": "tsk_f0365395951b4bff",
+      "taskKey": "assessment_prep",
+      "title": "Reserve 3h of Network Security preparation",
+      "detail": "Suggested block Oct 30, 6–9 PM, before the Oct 31, 9:00 AM internal assessment and after the event ends.",
+      "dueAt": "2026-10-31T09:00:00+05:30",
+      "blockStart": "2026-10-30T18:00:00+05:30",
+      "blockEnd": "2026-10-30T21:00:00+05:30",
+      "originRevision": 1,
+      "status": "needs_review",
+      "createdAt": "2026-10-23T08:06:34.144Z",
+      "updatedAt": "2026-10-23T08:06:34.745Z"
+    },
+    {
+      "id": "tsk_d0e58366498e4be6",
+      "taskKey": "db_project",
+      "title": "Finish Database mini-project before the event",
+      "detail": "Due Oct 29, 6:00 PM, during the event. Suggested work block: Oct 28, 6–9 PM. Submission itself is not automated.",
+      "dueAt": "2026-10-29T18:00:00+05:30",
+      "blockStart": "2026-10-28T18:00:00+05:30",
+      "blockEnd": "2026-10-28T21:00:00+05:30",
+      "originRevision": 1,
+      "status": "needs_review",
+      "createdAt": "2026-10-23T08:06:34.144Z",
+      "updatedAt": "2026-10-23T08:06:34.745Z"
+    },
+    {
+      "id": "tsk_fa601b6ed63342a5",
+      "taskKey": "verify_participation",
+      "title": "Confirm eligibility and on-duty approval",
+      "detail": "Check the official event rules and request advance on-duty approval from the appropriate authority before registration closes Oct 27, 11:59 PM.",
+      "dueAt": "2026-10-27T23:59:00+05:30",
+      "blockStart": null,
+      "blockEnd": null,
+      "originRevision": 1,
+      "status": "needs_review",
+      "createdAt": "2026-10-23T08:06:34.144Z",
+      "updatedAt": "2026-10-23T08:06:34.745Z"
+    }
+  ]
+}

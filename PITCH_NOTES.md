@@ -1,50 +1,74 @@
-# CampusPilot — pitch notes (ConvergeX 2026, PS2)
+# CampusPilot — 3-minute showcase script (ConvergeX 2026, PS2)
 
-Scope you can claim, word for word: *deterministic academic projections, server-enforced
-per-student isolation, revision-pinned approvals that execute local tasks, and automatic
-replanning when a source record changes, all on synthetic data. No VTOP connection and no live
-language model.*
+Claim exactly this: *a 1.2B-parameter model running on this laptop interprets the student's
+question and chooses which records to investigate; ordinary code computes every number; the
+server enforces isolation, revision-pinned approvals and automatic replanning — on synthetic data,
+with no VTOP connection.*
 
 ## Before you present (5 minutes)
 
-1. `npm run demo` (or `npm run dev`). Open http://localhost:3000 in a clean browser profile.
-2. Click **Open Maya's sample workspace**.
-3. **Decision studio → Reset scenario → Reset to seed data** so you start with no mission.
-4. Go back to **Overview**. Browser zoom 100–125%. Press **P** for presentation mode.
-5. Have `prototype/index.html` open in a second tab as the fallback.
-6. Turn off notifications. Leave Wi-Fi on or off; nothing here needs it.
+1. `ollama list` shows `llama3.2:1b`.
+2. `npm run demo` → http://localhost:3000 → **Open Maya's sample workspace**.
+3. **Decisions → Controlled demo → Reset demo.** Wait for **Local AI · llama3.2:1b (1.2B)**.
+4. Warm-up: ask any suggested question once, then **Reset demo** again.
+5. Open http://localhost:3000/overview?intro=1, press **Esc** to check it, then leave the tab on that URL.
+   (Replay any time: profile menu → *Play presentation intro*.)
+6. Press **P** for presentation mode; use the top-bar links (Home · Decisions · Activity · Security) to move between screens. Zoom 100–125%. Keep `prototype/index.html` open in another tab.
 
-## 90-second click path
+## Script (3:00)
 
-| Time | Click | Say |
-|---|---|---|
-| 0:00 | **Overview** (already open) | "Attendance lives in one portal, deadlines in another, opportunities on random websites. CampusPilot joins them to support a *decision*, not a reminder. Everything you see is a fictional student on synthetic data." |
-| 0:10 | **Explore my options** → **Ask CampusPilot** | "Maya asks if she can attend a two-day security hackathon. An academic specialist and an opportunity specialist pull her records through scoped, read-only tools. A deterministic engine computes the numbers. No language model is involved in the arithmetic." |
-| 0:25 | Click **Attend full event**, then **Attend selected sessions** | "Full attendance projects Network Security at **74.2%**, under the sample 75% rule. Selected sessions gives **77.4%**; deferring gives 80.6%. The recommendation is *conditional*: eligibility, on-duty approval and the real regulation are still marked as needing verification." *(If asked: **How is this calculated?** shows 24/31 with source versions.)* |
-| 0:40 | **Approve my action plan** | "Nothing happens until Maya approves. The server stores three local tasks and we read them back. It can't submit coursework or message anyone." |
-| 0:55 | Scroll down → **Move deadline earlier** | "Now the Database assignment moves from Oct 29 6 PM to Oct 28 7 PM in the academic source. Maya doesn't type anything. The source watcher finds the plan that depends on that record, recomputes it as revision 2, invalidates the old approval and highlights the changed task: the work block moves to Oct 27." *(Pause on the before/after diff.)* |
-| 1:15 | **Trust center** → **Test unauthorized access** | "The AI doesn't own permissions. These are real requests from this browser, with Maya's session, against another fictional student's records. The server returns 403 every time and logs the denial. The same checks run in our automated suite." |
-| 1:30 | (optional) **Agent activity** | "Every step here was recorded while the tools ran: arguments, outcome, evidence, timing. It's labelled offline because no model was called." |
+**0:00–0:20 · Opening (refresh `/overview?intro=1`; it runs ~18 s and reveals Home)**
+> "Students' information is everywhere — attendance in one portal, deadlines in another, events and
+> approvals somewhere else. *(stage 2)* The decisions are still disconnected. *(stage 3)* What if an
+> AI understood the whole situation — and could prove its answer? *(stage 4)* This is CampusPilot."
 
-## 3-minute version (adds context around the 90 seconds)
+**0:20–0:40 · Product (Home)**
+> "This is Maya — a fictional student on synthetic data. CampusPilot shows what needs attention:
+> Network Security is close to the sample 75% rule, a project is due during a hackathon she wants
+> to join, and registration closes soon." Click **Start evaluation**.
 
-1. **Problem (20 s):** students decide across fragmented systems, and a single change can invalidate a plan.
-2. **What it does (20 s):** it compares options with evidence, replans when sources change, and gates every action behind approval.
-3. **Architecture (30 s):** specialists with scoped tools → deterministic evaluator → planner → approval gateway → source watcher. The security boundary sits *outside* the AI: identity comes from the server session, and execution isn't exposed to agents at all.
-4. **Demo (90 s):** the click path above.
-5. **Honest scope (20 s):** "We built the engine, isolation, approvals and reactive replanning, all tested. Data is synthetic, there's no VTOP link and no live model yet. A real deployment needs authorised read-only institutional data and SSO."
+**0:40–1:15 · Local AI + timetable (Decisions → Ask your local agent)**
+Click **"Which classes clash with the hackathon, and what should I do?"**
+> "A small model running on this laptop — no cloud — decides what this question is about and which
+> records to check. It chose the class timetable and the event listing."
+Point at the answer: *full event clashes with three classes; selected sessions with one* and the
+next step. Click **View timetable**: "These are sample timetable records; the clash is real interval
+maths, highlighted here." (Optional: open **How CampusPilot answered** — model, 2–3 s, records it requested.)
 
-## Likely judge questions
+**1:15–1:45 · Decision comparison**
+Click **Compare my options** in the answer.
+> "The model chose *what to look at*. Ordinary code does the maths: full attendance 74.2%, selected
+> sessions 77.4%, defer 80.6% — and those absences match the timetable you just saw. The
+> recommendation is conditional: eligibility and on-duty approval are still unverified."
 
-- **"Is this connected to VTOP?"** No. There's no authorised VIT Vellore API, so we use a simulator behind a read-only adapter boundary. We never ask for credentials.
-- **"Where is the AI?"** Today the agents are a deterministic workflow over scoped tools, and we label it that way. A model would interpret goals and explain trade-offs by proposing tool calls through the same gateway. The arithmetic and the permissions stay deterministic.
-- **"Can it guarantee I won't be debarred?"** No. It shows arithmetic under a stated sample policy and keeps eligibility, exemptions and OD approval as *needs verification*.
-- **"What stops prompt injection?"** Event text is stored as data and never selects tools. Each tool has an allowlist and a strict schema, and identity is injected by the server. We tested a hostile notice against the deterministic workflow. We haven't tested a live model and won't claim we have.
-- **"How is this different from AssignoFast / VtopMCP / The College Agent?"** Those aggregate data or act as a general assistant. Our narrower deliverable is the decision loop: counterfactual impact, a revision-pinned approval, and an automatic replan when a source changes.
-- **"Impact?"** Not measured yet. We have no usage data and won't invent any.
+**1:45–2:15 · Approve → change → replan**
+Click **Approve plan**: "Maya approved *her plan* — that only creates local tasks; the rail still says
+on-duty permission is not verified."
+Click **Move deadline to Oct 28, 7:00 PM** and pause on the three steps:
+> "The academic source changed. Without a new prompt CampusPilot moved the work block from Oct 28
+> to Oct 27, created revision 2, and invalidated her old approval."
 
-## Contingency tiers
+**2:15–2:35 · Security proof**
+**Security → Run access check.**
+> "Real requests with Maya's session against another student's records: 403 every time, and it's in
+> the audit log. The AI can't change this — permissions live outside the model."
 
-- **Green:** the app runs. Use the path above, including the live 403 probe.
-- **Amber:** the server misbehaves mid-demo. Click **Reset scenario** and restart from Ask. If the server is down, stop it, run `npm run db:reset`, then `npm run demo`.
-- **Red:** Node or the laptop fails. Open `prototype/index.html` (it works from a file, offline) and say: *"This is our static offline prototype. Its permission denial is a UI illustration; the server-side version and its tests are in the repo."* Use `docs/screenshots/` as slides.
+**2:35–3:00 · Conclusion (optionally show Activity → the *Asked:* run)**
+> "Every step is recorded: here is the actual model call, the tools it requested, and that nothing
+> was written. CampusPilot: a local model that investigates, deterministic code that decides the
+> numbers, and a server that enforces the boundaries. Next: authorised institutional data and real
+> sign-in."
+
+## Honest answers
+
+- **Real?** Activity shows `local_llm`, model `llama3.2:1b`, with timings. `reports/ai-smoke.json` has a recorded run.
+- **Why doesn't the model write the answer?** 1.2B on a CPU misstated a percentage in our tests, so answers are composed from verified evidence.
+- **Timetable?** Synthetic sample records, not VTOP, not institutionally verified.
+- **Another student's data?** The model never gets identifiers and can only pick seven read-only tools; the server injects identity.
+- **Impact?** Not measured — we won't invent numbers.
+
+## Contingency
+
+- Model badge says *Offline · keyword fallback*: continue; answers say "Keyword fallback — not model output" and every number is identical.
+- App misbehaves: **Reset demo**, restart from Decisions. Server down: `npm run db:reset`, `npm run demo`.
+- Laptop fails: `prototype/index.html` (offline) and `docs/screenshots/v2/1440x900` as slides.
