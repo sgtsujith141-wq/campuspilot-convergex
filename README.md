@@ -5,7 +5,7 @@ before a student commits to an opportunity.**
 
 VIT ConvergeX 2026 · AI Solution Sprint · **PS2 AI-Based Smart Campus Management** · **Track 1 (AI Agents)**
 
-[![CI](https://github.com/sgtsujith141-wq/campuspilot-convergex/actions/workflows/ci.yml/badge.svg?branch=redesign/campuspilot-v2)](https://github.com/sgtsujith141-wq/campuspilot-convergex/actions/workflows/ci.yml)
+[![CI](https://github.com/sgtsujith141-wq/campuspilot-convergex/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sgtsujith141-wq/campuspilot-convergex/actions/workflows/ci.yml)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-142d35)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-11716c)
 ![Local AI](https://img.shields.io/badge/local%20AI-llama3.2%3A1b%20via%20Ollama-11716c)
